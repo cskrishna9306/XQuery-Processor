@@ -1,0 +1,14 @@
+// generate parser code from grammar Exp.g 
+java -cp antlr-4.13.1-complete.jar org.antlr.v4.Tool Exp.g
+
+// compile parser code
+javac -cp .:antlr-4.13.1-complete.jar *.java
+
+// call parser on stdin, to display parse tree in gui
+java -cp .:antlr-4.13.1-complete.jar org.antlr.v4.gui.TestRig Exp eval -gui
+
+// call parser on stdin, to display parse tree in console
+java -cp .:antlr-4.13.1-complete.jar org.antlr.v4.gui.TestRig Exp eval
+
+// call arithmetic expression evaluator on test in file test1.txt
+java -cp .:antlr-4.13.1-complete.jar Main test1.txt
