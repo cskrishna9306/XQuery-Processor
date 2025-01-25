@@ -1,0 +1,15 @@
+//Find all persons in the play:
+doc("j_caesar.xml")//PERSONA
+
+// Find the scenes in which CAESAR speaks
+doc("j_caesar.xml")//SCENE[SPEECH/SPEAKER/text() = "CAESAR"]
+
+// Find the acts containing some scene in which both caesar and brutus speaks
+doc("j_caesar.xml")//ACT[SCENE [SPEECH/SPEAKER/text() = "CAESAR" and SPEECH/SPEAKER/text() = "BRUTUS"]]
+
+// same as previous but with diff syntax
+doc("j_caesar.xml")//ACT[SCENE [SPEECH/SPEAKER/text() = "CAESAR"]
+[SPEECH/SPEAKER/text() = "BRUTUS"]]
+
+// find the acts in which caesar no longer appears
+doc("j_caesar.xml")//ACT[not .//SPEAKER/text() = "CAESAR"]
