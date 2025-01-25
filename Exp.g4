@@ -25,7 +25,7 @@ multiplyExp
    when we encounter parenthesis, we're making a recursive call back to the
    rule 'additionExp'. As you can see, an 'atomExp' has the highest precedence. */
 atomExp
-    :    Number
+    :    String
     |    '(' additionExp ')'
     ;
 
@@ -33,6 +33,12 @@ atomExp
 Number
     :    ('0'..'9')+ ('.' ('0'..'9')+)?
     ;
+
+/* A number: can be an integer value, or a decimal value */
+String
+    :    ('a'..'z')+
+    ;
+
 
 /* We're going to ignore all white space characters */
 WS  
