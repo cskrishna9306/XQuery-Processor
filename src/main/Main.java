@@ -2,6 +2,9 @@ import org.antlr.v4.runtime.ANTLRFileStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import com.example.antlr4.ExpLexer;
+import com.example.antlr4.ExpParser;
+
 public class Main {
     public static void main(String[] args) throws Exception {
         String fname = args[0];

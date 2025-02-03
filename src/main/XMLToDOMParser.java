@@ -1,10 +1,12 @@
+import org.w3c.dom.Document;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import org.w3c.dom.Document;
 import java.io.File;
 
-public class XQueryProcessor {
-    public static void XMLToDOMParser() {
+public class XMLToDOMParser {
+
+    public static Document parse(String fileName) {
         try {
             // Create a DocumentBuilderFactory
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -17,7 +19,7 @@ public class XQueryProcessor {
             DocumentBuilder builder = factory.newDocumentBuilder();
 
             // Parse the XML file
-            File xmlFile = new File("j_caesar.xml");
+            File xmlFile = new File(fileName);
             Document document = builder.parse(xmlFile);
 
             // Normalize the document (optional, but recommended)
@@ -26,16 +28,12 @@ public class XQueryProcessor {
             // Output root element for confirmation
             System.out.println("Root element: " + document.getDocumentElement().getNodeName());
 
+            return document;
+
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
 
-    public static void XQueryParser() {
-        
+        return null;
     }
-
-    public static void main(String[] args) {
-        XMLToDOMParser();
-    } 
 }

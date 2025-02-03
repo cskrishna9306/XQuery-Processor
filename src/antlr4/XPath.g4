@@ -1,17 +1,17 @@
-// Define the grammar name
 grammar XPath;
 
-xpath
+// Entry point of the parser
+eval
     : absolutePath
     ;
 
-// Parser rules
+// Parser rules for absolute path
 absolutePath
   : 'doc(' fileName ')' '/' relativePath
   | 'doc(' fileName ')' '//' relativePath
   ;
 
-// relativePath: STRING ;
+// Parser rules for relative path
 relativePath
   : tagName
   | '*'
@@ -26,12 +26,14 @@ relativePath
   | relativePath ',' relativePath
   ;
 
-filter: relativePath
+// Parser rules for filter
+filter
+  : relativePath
   | relativePath '=' relativePath
   | relativePath 'eq' relativePath
   | relativePath '==' relativePath
   | relativePath 'is' relativePath
-  | relativePath '=' '"' STRING '"'
+  | relativePath '=' ('"' | '“') STRING ('"' | '”')
   | '(' filter ')'
   | filter 'and' filter
   | filter 'or' filter
@@ -41,7 +43,7 @@ filter: relativePath
 // Lexer rules
 tagName: STRING;
 attributeName: STRING ;
-fileName: '"' STRING '"' ;
+fileName: ('"' | '“') STRING ('"' | '”') ;
 
 // Define operators and other symbols as fragments
 // TODO: add special chars?
