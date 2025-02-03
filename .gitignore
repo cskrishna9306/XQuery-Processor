@@ -1,3 +1,7 @@
 /.gitignore
 /.idea
 /.vscode
+*.class
+/output
+/out
+/target
