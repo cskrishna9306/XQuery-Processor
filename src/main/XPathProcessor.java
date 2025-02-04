@@ -1,5 +1,4 @@
-//package main;
-
+// ANTLR import statements
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -11,10 +10,11 @@ import com.example.antlr4.XPathParser;
 public class XPathProcessor {
 
     public static ParseTree parse(String xpath) throws Exception {
-        XPathLexer lexer = new com.example.antlr4.XPathLexer(new ANTLRInputStream(xpath));
+        XPathLexer lexer = new XPathLexer(new ANTLRInputStream(xpath));
         XPathParser parser = new XPathParser(new CommonTokenStream(lexer));
         ParseTree tree = parser.eval();
-
+        System.out.println(parser.fileName().getText());
+//        System.out.println(tree.toStringTree(parser));
         return tree;
     }
 
@@ -24,7 +24,7 @@ public class XPathProcessor {
         // Step 3: Process the rest of the XPath
         try {
             ParseTree AST = parse(args[0]);
-            System.out.println(AST.toString());
+//            System.out.println(AST.toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
