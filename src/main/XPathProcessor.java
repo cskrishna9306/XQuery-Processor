@@ -24,7 +24,7 @@ public class XPathProcessor {
         return parser.eval();
     }
 
-    public static List<Node> parse(Element DOMElement, ParseTree AST) {
+    private static List<Node> parse(Element DOMElement, ParseTree AST) {
         if (AST instanceof XPathParser.EvalContext) {
             return parse(null, AST.getChild(0));
         }
@@ -44,7 +44,7 @@ public class XPathProcessor {
         return null;
     }
 
-    public static List<Node> parseAbsolutePath(ParseTree AST) {
+    private static List<Node> parseAbsolutePath(ParseTree AST) {
 
         String fileName = ((XPathParser.AbsolutePathContext) AST).fileName().STRING().toString();
         Document DOMTree = XMLToDOMParser.parse("src/main/" + fileName);
@@ -53,10 +53,9 @@ public class XPathProcessor {
 //        return parseRelativePath(DOMTree.getDocumentElement(), ((XPathParser.AbsolutePathContext) AST).relativePath());
     }
 
-    public static List<Node> parseRelativePath(Element DOMElement, ParseTree AST) {
+    private static List<Node> parseRelativePath(Element DOMElement, ParseTree AST) {
 
         List<Node> result = new ArrayList<>();
-        System.out.println(AST.getChildCount());
         // can i manipulate the number of children for this AST?
         // if childcount == 1, then first 5 cases
         // if childcount == 2, one case
@@ -134,10 +133,9 @@ public class XPathProcessor {
         return result;
     }
 
-    public static List<Node> parseFilter(Element DOMElement, ParseTree AST) {
+    private static List<Node> parseFilter(Element DOMElement, ParseTree AST) {
 
         List<Node> result = new ArrayList<>();
-        System.out.println(AST.getChildCount());
         // can i manipulate the number of children for this AST?
         // if childcount == 1, then 1 case
         // if childcount == 2, then 1 case
@@ -161,10 +159,27 @@ public class XPathProcessor {
             case 3: {
                 ParseTree child = AST.getChild(0);
                 if (child instanceof XPathParser.RelativePathContext) {
-                    ParseTree separator = AST.getChild(1);
+
+                    ParseTree rp1 = AST.getChild(0);
+                    ParseTree rp2 = AST.getChild(2);
+
+                    switch (AST.getChild(1).getText()) {
+                        case "=": {
+                            break;
+                        }
+                        case "eq": {
+                            break;
+                        }
+                        case "==": {
+                            break;
+                        }
+                        case "is": {
+                            break;
+                        }
+                    }
 
                 } else {
-                    return parseRelativePath(DOMElement, AST.getChild(1));
+
                 }
                 break;
             }

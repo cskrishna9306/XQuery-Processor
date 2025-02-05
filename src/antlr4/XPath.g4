@@ -41,12 +41,11 @@ filter
   ;
 
 // Lexer rules
-tagName: STRING;
+tagName: STRING ;
 attributeName: STRING ;
 fileName: ('"' | '“') STRING ('"' | '”') ;
 
 // Define operators and other symbols as fragments
-// TODO: add special chars?
 STRING: (LETTER | DIGIT | '_' | '.')+;
 DIGIT: [0-9] ;
 LETTER: [a-zA-Z] ;
