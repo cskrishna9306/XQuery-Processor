@@ -26,7 +26,7 @@ public class XMLToDOMParser {
             document.getDocumentElement().normalize();
 
             // Output root element for confirmation
-            System.out.println("Root element: " + document.getDocumentElement().getNodeName());
+            System.out.println("Completed XML to DOM parsing.");
 
             return document;
 
