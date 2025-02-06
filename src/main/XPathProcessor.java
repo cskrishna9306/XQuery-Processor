@@ -37,10 +37,12 @@ public class XPathProcessor {
         }
 
         if (AST instanceof XPathParser.RelativePathContext) {
+//            System.out.println("Relative Context");
             return parseRelativePath(DOMElement, AST);
         }
 
         if (AST instanceof XPathParser.FilterContext) {
+            System.out.println("Filter Context");
             return parseFilter(DOMElement, AST);
         }
 
@@ -108,6 +110,8 @@ public class XPathProcessor {
                     result.add(DOMElement);
                 } else if (child.getText().equals("..")) {
                     result.add(DOMElement.getParentNode());
+                } else if (child.getText().equals("text()")) {
+                    result.add(DOMElement);
                 }
 
 //                if (child.getText().equals("text()")) {
@@ -153,9 +157,10 @@ public class XPathProcessor {
             case 4: {
                 ParseTree rp = AST.getChild(0);
                 ParseTree filter = AST.getChild(2);
-
+//                System.out.println("At RP with filter:" + "rp: " + rp.getText() + " filter: " + filter.getText());
                 if (rp instanceof XPathParser.RelativePathContext && filter instanceof XPathParser.FilterContext) {
                     // implement the rp[filter] case
+                    result.addAll(parse(DOMElement, filter));
                 }
             }
         }
@@ -171,6 +176,8 @@ public class XPathProcessor {
         // if childcount == 2, then 1 case
         // if childcount == 3, 7 cases
         // if childcount == 5, one case
+        System.out.println("Filter Child Count: " + AST.getChildCount());
+        System.out.println("ParseTree: " + AST.getText());
         switch (AST.getChildCount()) {
             case 1: {
                 ParseTree child = AST.getChild(0);
@@ -183,6 +190,7 @@ public class XPathProcessor {
                 ParseTree child = AST.getChild(1);
                 if (AST.getChild(0).getText().equals("not") && child instanceof XPathParser.FilterContext) {
                     // implement not filter case
+
                 }
                 break;
             }
@@ -195,17 +203,47 @@ public class XPathProcessor {
 
                     switch (AST.getChild(1).getText()) {
                         case "=": {
+                            System.out.println("rp1: " + rp1.getText() + " rp2: " + rp2.getText()+  " rp2tag: " + rp2.getClass()); .
+                            System.out.println("rp2 string constant?" + (rp2 instanceof XPathParser.StringConstantContext));
+                            System.out.println("rp2 rp?" + (rp2 instanceof XPathParser.RelativePathContext));
+                            if (rp2 instanceof XPathParser.StringConstantContext){
+                                System.out.println("string compare filter");
+                                List<Node> rp1Nodes = parseRelativePath(DOMElement, rp1);
+//                                System.out.println("rp1: " + rp1Nodes.size() + " rp2: " + rp2Nodes.size());
+                                for (Node node1 : rp1Nodes) {
+                                    if (node1.getTextContent().equals(rp2.getText())) {
+                                        result.add(node1);
+                                    }
+                                }
+                            }else {
+                                List<Node> rp1Nodes = parseRelativePath(DOMElement, rp1);
+                                List<Node> rp2Nodes = parseRelativePath(DOMElement, rp2);
+                                System.out.println("rp1: " + rp1Nodes.size() + " rp2: " + rp2Nodes.size());
+                                for (Node node1 : rp1Nodes) {
+                                    for (Node node2 : rp2Nodes) {
+                                        if (node1.isEqualNode(node2)) {
+                                            result.add(node1);
+                                        }
+                                    }
+                                }
+                            }
+                            System.out.println("Result: " + result.size());
                             break;
                         }
-                        case "eq": {
-                            break;
-                        }
+                        case "eq":
                         case "==": {
+                            List<Node> rp1Nodes = parseRelativePath(DOMElement, rp1);
+                            List<Node> rp2Nodes = parseRelativePath(DOMElement, rp2);
+                            for (Node node1 : rp1Nodes) {
+                                for (Node node2 : rp2Nodes) {
+                                    if (node1.isSameNode(node2)) {
+                                        result.add(node1);
+                                    }
+                                }
+                            }
                             break;
                         }
-                        case "is": {
-                            break;
-                        }
+                        case "is":
                     }
 
                 } else {
