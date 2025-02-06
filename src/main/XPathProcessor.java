@@ -203,7 +203,7 @@ public class XPathProcessor {
 
                     switch (AST.getChild(1).getText()) {
                         case "=": {
-                            System.out.println("rp1: " + rp1.getText() + " rp2: " + rp2.getText()+  " rp2tag: " + rp2.getClass()); .
+                            System.out.println("rp1: " + rp1.getText() + " rp2: " + rp2.getText()+  " rp2tag: " + rp2.getClass());
                             System.out.println("rp2 string constant?" + (rp2 instanceof XPathParser.StringConstantContext));
                             System.out.println("rp2 rp?" + (rp2 instanceof XPathParser.RelativePathContext));
                             if (rp2 instanceof XPathParser.StringConstantContext){

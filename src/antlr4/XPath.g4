@@ -33,7 +33,7 @@ filter
   | relativePath 'eq' relativePath
   | relativePath '==' relativePath
   | relativePath 'is' relativePath
-  | relativePath '=' stringConstant
+  | relativePath '=' ('"' | '“') stringConstant ('"' | '”')
   | '(' filter ')'
   | filter 'and' filter
   | filter 'or' filter
@@ -44,7 +44,7 @@ filter
 tagName: STRING;
 attributeName: STRING ;
 fileName: ('"' | '“') STRING ('"' | '”') ;
-stringConstant:('"' | '“') STRING ('"' | '”') ;
+stringConstant: STRING;
 
 // Define operators and other symbols as fragments
 STRING: (LETTER | DIGIT | '_' | '.')+;
