@@ -1,3 +1,4 @@
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.w3c.dom.*;
 
 import java.util.LinkedHashSet;
@@ -13,6 +14,8 @@ import org.antlr.v4.runtime.tree.ParseTree;
 // Custom import packages
 import com.example.antlr4.XPathLexer;
 import com.example.antlr4.XPathParser;
+
+import javax.xml.stream.events.EndElement;
 
 public class XPathProcessor {
 
@@ -49,9 +52,36 @@ public class XPathProcessor {
         String fileName = ((XPathParser.AbsolutePathContext) AST).fileName().STRING().toString();
         Document DOMTree = XMLToDOMParser.parse("src/main/" + fileName);
 
-        return parse(DOMTree.getDocumentElement(), ((XPathParser.AbsolutePathContext) AST).relativePath());
-//        return parseRelativePath(DOMTree.getDocumentElement(), ((XPathParser.AbsolutePathContext) AST).relativePath());
+        switch (((XPathParser.AbsolutePathContext) AST).getChild(3).getText()) {
+            case "/": {
+                return parse(DOMTree.getDocumentElement(), ((XPathParser.AbsolutePathContext) AST).relativePath());
+            }
+            case "//": {
+                XPathParser.RelativePathContext relativePath = ((XPathParser.AbsolutePathContext) AST).relativePath();
+                List<Node> results = new ArrayList<>();
+
+                // Apply relative path parsing to each descendant
+                for (Element descendant : getAllDescendants(DOMTree.getDocumentElement())) {
+                    results.addAll(parse(descendant, relativePath));
+                }
+
+                return results;
+            }
+        }
+        return null;
     }
+
+    private static List<Element> getAllDescendants(Element DOMElement) {
+        List<Element> descendants = new ArrayList<>();
+        NodeList allElements = DOMElement.getElementsByTagName("*");  // Gets all elements
+
+        for (int i = 0; i < allElements.getLength(); i++) {
+            descendants.add((Element) allElements.item(i));
+        }
+
+        return descendants;
+    }
+
 
     private static List<Node> parseRelativePath(Element DOMElement, ParseTree AST) {
 
@@ -223,6 +253,7 @@ public class XPathProcessor {
 //            System.out.println(AST.getChild());
             List<Node> result = parse(null, AST);
             printNodes(result);
+            XMLToDOMParser.exportToXML(result, "result.xml");
 
         } catch (Exception e) {
             e.printStackTrace();
