@@ -1,10 +1,7 @@
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.w3c.dom.*;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.*;
 
 // ANTLR import statements
 import org.antlr.v4.runtime.CharStreams;
@@ -126,7 +123,9 @@ public class XPathProcessor {
 //                    Document doc = builder.newDocument();
 //
 //                    result.add(doc.createTextNode(DOMElement.getTextContent()));
-                    result.add(DOMElement);
+                    result.add(DOMElement.getFirstChild());
+//                    result.add(DOMElement.TEXT_NODE);
+
                 }
 
 //                switch (AST.getChild(0).getText()) {
@@ -139,7 +138,7 @@ public class XPathProcessor {
                 ParseTree child = AST.getChild(1);
                 if (child instanceof XPathParser.AttributeNameContext) {
                     // implement attribute helper function
-                    DOMElement.getAttribute(child.getText());
+                    result.addAll((Collection<? extends Node>) DOMElement.getAttributeNode(child.getText()));
 //                    DOMElement.getAttribute()
 //                    DOMElement
                 }
