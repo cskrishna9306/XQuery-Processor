@@ -54,25 +54,28 @@ public class XPathProcessor {
             }
             case "//": {
                 XPathParser.RelativePathContext relativePath = ((XPathParser.AbsolutePathContext) AST).relativePath();
-//                List<Node> results = new ArrayList<>();
-//
-//                // Apply relative path parsing to each descendant
-//                for (Element descendant : getAllDescendants(DOMTree.getDocumentElement())) {
-//                    results.addAll(parse(descendant, relativePath));
-//                }
+                List<Node> results = new ArrayList<>();
+                System.out.println("ABS //");
+                ParseTree rp = ((XPathParser.AbsolutePathContext) AST).relativePath();
 
-                Set<Node> result = new LinkedHashSet<>(); // Ensuring uniqueness
-                for (Node node : parseRelativePath(DOMTree.getDocumentElement(), relativePath)) {
-                    if (node.getNodeType() == Node.ELEMENT_NODE) {
-                        result.addAll(parseRelativePath((Element) node, relativePath));
-                        for (Element descendant : getAllDescendants(DOMTree.getDocumentElement())) {
-                            result.addAll(parse(descendant, relativePath));
-                        }
-                    }
+                // Apply relative path parsing to each descendant
+                 for (Element descendant : getAllDescendants(DOMTree.getDocumentElement())) {
+//                results.addAll(parse(DOMTree.getDocumentElement(), ((XPathParser.AbsolutePathContext) AST).relativePath()));
+                   results.addAll(parse(descendant, relativePath));
                 }
-                List<Node> t = new ArrayList<>();
-                t.addAll(result);
-                return t;
+
+//                Set<Node> result = new LinkedHashSet<>(); // Ensuring uniqueness
+//                for (Node node : parseRelativePath(DOMTree.getDocumentElement(), relativePath)) {
+//                    if (node.getNodeType() == Node.ELEMENT_NODE) {
+//                        result.addAll(parseRelativePath((Element) node, relativePath));
+//                        for (Element descendant : getAllDescendants(DOMTree.getDocumentElement())) {
+//                            result.addAll(parse(descendant, relativePath));
+//                        }
+//                    }
+//                }
+//                List<Node> t = new ArrayList<>();
+//                t.addAll(result);
+                return results;
             }
         }
         return null;
@@ -150,7 +153,6 @@ public class XPathProcessor {
 
                     ParseTree rp1 = AST.getChild(0);
                     ParseTree rp2 = AST.getChild(2);
-
                     switch (AST.getChild(1).getText()) {
                         case "/": {
                             Set<Node> uniqueNodes = new LinkedHashSet<>(); // Ensuring uniqueness
@@ -244,11 +246,29 @@ public class XPathProcessor {
                     switch (AST.getChild(1).getText()) {
                         case "=":
                         case "eq": {
-                            break;
+                            List<Node> rp1Nodes = parseRelativePath(DOMElement, rp1);
+                            List<Node> rp2Nodes = parseRelativePath(DOMElement, rp2);
+                            for (Node n1 : rp1Nodes) {
+                                for (Node n2 : rp2Nodes) {
+                                    if (n1.isEqualNode(n2)) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            return false;
                         }
                         case "==":
                         case "is": {
-                            break;
+                            List<Node> rp1Nodes = parseRelativePath(DOMElement, rp1);
+                            List<Node> rp2Nodes = parseRelativePath(DOMElement, rp2);
+                            for (Node n1 : rp1Nodes) {
+                                for (Node n2 : rp2Nodes) {
+                                    if (n1.isSameNode(n2)) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            return false;
                         }
                     }
 
@@ -315,7 +335,7 @@ public class XPathProcessor {
             ParseTree AST = generateAST(args[0]);
 //            System.out.println(AST.getChild());
             List<Node> result = parse(null, AST);
-            printNodes(result);
+//            printNodes(result);
             XMLToDOMParser.exportToXML(result, "result.xml");
 
         } catch (Exception e) {
