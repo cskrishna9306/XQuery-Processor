@@ -255,7 +255,6 @@ public class XPathProcessor {
                                     }
                                 }
                             }
-                            return false;
                         }
                         case "==":
                         case "is": {
@@ -268,7 +267,6 @@ public class XPathProcessor {
                                     }
                                 }
                             }
-                            return false;
                         }
                     }
 
