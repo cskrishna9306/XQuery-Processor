@@ -1,4 +1,3 @@
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.w3c.dom.*;
 
 import java.util.*;
@@ -14,17 +13,57 @@ import com.example.antlr4.XPathParser;
 
 public class XPathProcessor {
 
-    public static ParseTree generateAST(String xpath) throws Exception {
+    public static List<Node> getChildren(Element parent) {
+        List<Node> childrenList = new ArrayList<>();
+        NodeList children = parent.getChildNodes();
 
-        XPathLexer lexer = new XPathLexer(CharStreams.fromString(xpath));
-        XPathParser parser = new XPathParser(new CommonTokenStream(lexer));
+        for (int i = 0; i < children.getLength(); i++) {
+            childrenList.add(children.item(i));
+        }
 
-        return parser.eval();
+        return childrenList;
     }
 
-    private static List<Node> parse(Element DOMElement, ParseTree AST) {
+    private static List<Node> getAllDescendants(Element DOMElement) {
+        List<Node> descendants = new ArrayList<>();
+//        NodeList nodeList = DOMElement.getChildNodes();
+
+//        for (int i = 0; i < nodeList.getLength(); i++) {
+//            Node child = nodeList.item(i);
+//             // Add the child node
+//            if (child.getNodeType() == Node.ELEMENT_NODE) {
+//                descendants.add((Element) child);
+//                descendants.addAll(getAllDescendants((Element) child));
+//            } else {
+//                System.out.println(child.getNodeType() + " " + child.getTextContent());
+//            }
+//        }
+
+        for (Node child : getChildren(DOMElement)) {
+            // we add all children (element, attribute, and text)
+            if (child.getNodeType() == Node.TEXT_NODE || child.getNodeType() == Node.ELEMENT_NODE) {
+                descendants.add(child);
+                // we only recurse on element nodes
+                if (child.getNodeType() == Node.ELEMENT_NODE) {
+                    descendants.addAll(getAllDescendants((Element) child));
+                }
+            } else {
+                System.out.println(child.getNodeType() + " " + child.getTextContent());
+            }
+        }
+
+        return descendants;
+    }
+
+    public static void printNodes(List<Node> nodes) {
+        for (Node node : nodes) {
+            System.out.println("Found Node: " + node.getNodeName() + " -> " + node.getTextContent().trim());
+        }
+    }
+
+    private static List<Node> parse(Node DOMElement, ParseTree AST) {
         if (AST instanceof XPathParser.EvalContext) {
-            return parse(null, AST.getChild(0));
+            return parse(null, ((XPathParser.EvalContext) AST).absolutePath());
         }
 
         if (AST instanceof XPathParser.AbsolutePathContext) {
@@ -48,47 +87,21 @@ public class XPathProcessor {
                 return parse(DOMTree.getDocumentElement(), ((XPathParser.AbsolutePathContext) AST).relativePath());
             }
             case "//": {
-                XPathParser.RelativePathContext relativePath = ((XPathParser.AbsolutePathContext) AST).relativePath();
-                List<Node> results = new ArrayList<>();
-                System.out.println("ABS //");
-                ParseTree rp = ((XPathParser.AbsolutePathContext) AST).relativePath();
+                // need to get all children of the root/DOMElement
+                // perform child/rp on each child and then descendants
+                Set<Node> results = new LinkedHashSet<>(); // Ensuring uniqueness
 
-                // Apply relative path parsing to each descendant
-                 for (Element descendant : getAllDescendants(DOMTree.getDocumentElement())) {
-//                results.addAll(parse(DOMTree.getDocumentElement(), ((XPathParser.AbsolutePathContext) AST).relativePath()));
-                   results.addAll(parse(descendant, relativePath));
+                for (Node n : getAllDescendants(DOMTree.getDocumentElement())) {
+                     results.addAll(parse(n, ((XPathParser.AbsolutePathContext) AST).relativePath()));
                 }
 
-//                Set<Node> result = new LinkedHashSet<>(); // Ensuring uniqueness
-//                for (Node node : parseRelativePath(DOMTree.getDocumentElement(), relativePath)) {
-//                    if (node.getNodeType() == Node.ELEMENT_NODE) {
-//                        result.addAll(parseRelativePath((Element) node, relativePath));
-//                        for (Element descendant : getAllDescendants(DOMTree.getDocumentElement())) {
-//                            result.addAll(parse(descendant, relativePath));
-//                        }
-//                    }
-//                }
-//                List<Node> t = new ArrayList<>();
-//                t.addAll(result);
-                return results;
+                return new ArrayList<>(results);
             }
         }
         return null;
     }
 
-    private static List<Element> getAllDescendants(Element DOMElement) {
-        List<Element> descendants = new ArrayList<>();
-        NodeList allElements = DOMElement.getElementsByTagName("*");  // Gets all elements
-
-        for (int i = 0; i < allElements.getLength(); i++) {
-            descendants.add((Element) allElements.item(i));
-        }
-
-        return descendants;
-    }
-
-
-    private static List<Node> parseRelativePath(Element DOMElement, ParseTree AST) {
+    private static List<Node> parseRelativePath(Node DOMElement, ParseTree AST) {
 
         List<Node> result = new ArrayList<>();
         // can i manipulate the number of children for this AST?
@@ -101,28 +114,43 @@ public class XPathProcessor {
                 ParseTree child = AST.getChild(0);
                 if (child instanceof XPathParser.TagNameContext) {
                     // Search for matching elements in the DOM
-                    for (Node node : children(DOMElement)) {
-                        if (node.getNodeName().equals(child.getText())) {
-                            result.add(node);
+                    if (DOMElement.getNodeType() == Node.ELEMENT_NODE) {
+                        for (Node node : getChildren((Element) DOMElement)) {
+                            if (node.getNodeName().equals(child.getText())) {
+                                result.add(node);
+                            }
                         }
                     }
-                } else if (child.getText().equals("*")) {
-                    result.addAll(children(DOMElement));
-                } else if (child.getText().equals(".")) {
-                    result.add(DOMElement);
-                } else if (child.getText().equals("..")) {
-                    result.add(DOMElement.getParentNode());
-                } else if (child.getText().equals("text()")) {
-                    result.add(DOMElement.getFirstChild());
-                }
+                } else {
+                    switch (child.getText()) {
+                        case "*": {
 
+                            result.addAll(getChildren((Element) DOMElement));
+                            break;
+                        }
+                        case ".": {
+                            result.add(DOMElement);
+                            break;
+                        }
+                        case "..": {
+                            result.add(DOMElement.getParentNode());
+                            break;
+                        }
+                        case "text()": {
+                            // will be of type TEXT_NODE
+                            result.add(DOMElement.getFirstChild());
+                            break;
+                        }
+                    }
+                }
                 break;
             }
             case 2: {
                 ParseTree child = AST.getChild(1);
                 if (child instanceof XPathParser.AttributeNameContext) {
                     // implement attribute helper function
-                    result.addAll((Collection<? extends Node>) DOMElement.getAttributeNode(child.getText()));
+//                    result.addAll((Collection<? extends Node>) DOMElement.getAttributeNode(child.getText()));
+                    System.out.println(DOMElement.getAttributes().toString());
 //                    DOMElement.getAttribute()
 //                    DOMElement
                 }
@@ -138,10 +166,10 @@ public class XPathProcessor {
                     switch (AST.getChild(1).getText()) {
                         case "/": {
                             Set<Node> uniqueNodes = new LinkedHashSet<>(); // Ensuring uniqueness
-                            for (Node node : parseRelativePath(DOMElement, rp1)) {
-                                if (node.getNodeType() == Node.ELEMENT_NODE) {
-                                    uniqueNodes.addAll(parseRelativePath((Element) node, rp2));
-                                }
+                            for (Node node : parse(DOMElement, rp1)) {
+//                                if (node.getNodeType() == Node.ELEMENT_NODE ) {
+                                    uniqueNodes.addAll(parse((Element) node, rp2));
+//                                }
                             }
 
                             result.addAll(uniqueNodes);
@@ -149,26 +177,22 @@ public class XPathProcessor {
                         }
                         case "//": {
                             Set<Node> uniqueNodes = new LinkedHashSet<>(); // Ensuring uniqueness
-                            for (Node node : parseRelativePath(DOMElement, rp1)) {
-                                if (node.getNodeType() == Node.ELEMENT_NODE) {
-                                    uniqueNodes.addAll(parseRelativePath((Element) node, rp2));
-                                    for (Element descendant : getAllDescendants(DOMElement)) {
-                                        uniqueNodes.addAll(parse(descendant, rp2));
-                                    }
-                                }
+
+                            for (Node descendant : getAllDescendants((Element) DOMElement)) {
+                                uniqueNodes.addAll(parse((Element) descendant, rp2));
                             }
 
                             result.addAll(uniqueNodes);
                             break;
                         }
                         case ",": {
-                            result.addAll(parseRelativePath(DOMElement, rp1));
-                            result.addAll(parseRelativePath(DOMElement, rp2));
+                            result.addAll(parse(DOMElement, rp1));
+                            result.addAll(parse(DOMElement, rp2));
                             break;
                         }
                     }
                 } else {
-                    return parseRelativePath(DOMElement, AST.getChild(1));
+                    result.addAll(parse(DOMElement, AST.getChild(1)));
                 }
                 break;
             }
@@ -281,31 +305,17 @@ public class XPathProcessor {
         return false;
     }
 
-    public static List<Node> children(Element parent) {
-        List<Node> childrenList = new ArrayList<>();
-        NodeList children = parent.getChildNodes();
-
-        for (int i = 0; i < children.getLength(); i++) {
-            childrenList.add(children.item(i));
-        }
-
-        return childrenList;
-    }
-
-    public static void printNodes(List<Node> nodes) {
-        for (Node node : nodes) {
-            System.out.println("Found Node: " + node.getNodeName() + " -> " + node.getTextContent().trim());
-        }
-    }
-
     public static void main(String[] args) {
         // Step 1: Read the XPath query
         // Step 2: Extract the file name from the absolute path, and build the DOM tree of this file
         // Step 3: Process the rest of the XPath
         try {
-            ParseTree AST = generateAST(args[0]);
+            XPathLexer lexer = new XPathLexer(CharStreams.fromString(args[0]));
+            XPathParser parser = new XPathParser(new CommonTokenStream(lexer));
+
+            ParseTree AST = parser.eval();
+
             List<Node> result = parse(null, AST);
-//            printNodes(result);
             XMLToDOMParser.exportToXML(result, "result.xml");
 
         } catch (Exception e) {
