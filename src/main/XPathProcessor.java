@@ -78,12 +78,18 @@ public class XPathProcessor {
 
     private static List<Element> getAllDescendants(Element DOMElement) {
         List<Element> descendants = new ArrayList<>();
-        NodeList allElements = DOMElement.getElementsByTagName("*");  // Gets all elements
+        NodeList nodeList = DOMElement.getChildNodes();
 
-        for (int i = 0; i < allElements.getLength(); i++) {
-            descendants.add((Element) allElements.item(i));
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node child = nodeList.item(i);
+             // Add the child node
+            if (child.getNodeType() == Node.ELEMENT_NODE) {
+                descendants.add((Element) child);
+                descendants.addAll(getAllDescendants((Element) child));
+            } else {
+                System.out.println(child.getNodeType() + " " + child.getTextContent());
+            }
         }
-
         return descendants;
     }
 
