@@ -1,14 +1,8 @@
-// generate parser code from grammar Exp.g 
-java -cp antlr-4.13.1-complete.jar org.antlr.v4.Tool Exp.g
+# Quickstart
+Run with `./script.sh`
+or
+`mvn clean compile
+ javac -cp lib/antlr-4.13.1-complete.jar:target/main -d target/main src/main/XPathProcessor.java
+ java -cp lib/antlr-4.13.1-complete.jar:target/main XPathProcessor "doc(\"j_caesar.xml\")//SPEECH[.//SPEAKER[text() = \"CAESAR\"] is .//SPEAKER]"`
 
-// compile parser code
-javac -cp .:antlr-4.13.1-complete.jar *.java
-
-// call parser on stdin, to display parse tree in gui
-java -cp .:antlr-4.13.1-complete.jar org.antlr.v4.gui.TestRig Exp eval -gui
-
-// call parser on stdin, to display parse tree in console
-java -cp .:antlr-4.13.1-complete.jar org.antlr.v4.gui.TestRig Exp eval
-
-// call arithmetic expression evaluator on test in file test1.txt
-java -cp .:antlr-4.13.1-complete.jar Main test1.txt
+ *NOTE* due to using CLI to input XPath queries, quotes within the query must be escaped with a backslash.
