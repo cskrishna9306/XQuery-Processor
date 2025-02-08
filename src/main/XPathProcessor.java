@@ -86,9 +86,10 @@ public class XPathProcessor {
             if (child.getNodeType() == Node.ELEMENT_NODE) {
                 descendants.add((Element) child);
                 descendants.addAll(getAllDescendants((Element) child));
-            } else {
-                System.out.println(child.getNodeType() + " " + child.getTextContent());
             }
+//            else {
+////                System.out.println(child.getNodeType() + " " + child.getTextContent());
+//            }
         }
         return descendants;
     }
@@ -187,6 +188,9 @@ public class XPathProcessor {
                         if (parseFilter((Element) intermediate, filter)) {
                             result.add(intermediate);
                         }
+//                        if (AST.getText().equals("SPEECH")) {
+                            System.out.println("AST: " + AST.getText() + " filter: " + parseFilter((Element) intermediate, filter));
+//                        }
                     }
                 }
             }
