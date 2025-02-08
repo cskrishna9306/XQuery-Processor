@@ -50,7 +50,6 @@ public class XPathProcessor {
             case "//": {
                 XPathParser.RelativePathContext relativePath = ((XPathParser.AbsolutePathContext) AST).relativePath();
                 List<Node> results = new ArrayList<>();
-                System.out.println("ABS //");
                 ParseTree rp = ((XPathParser.AbsolutePathContext) AST).relativePath();
 
                 // Apply relative path parsing to each descendant
@@ -87,9 +86,6 @@ public class XPathProcessor {
                 descendants.add((Element) child);
                 descendants.addAll(getAllDescendants((Element) child));
             }
-//            else {
-////                System.out.println(child.getNodeType() + " " + child.getTextContent());
-//            }
         }
         return descendants;
     }
@@ -99,10 +95,10 @@ public class XPathProcessor {
 
         List<Node> result = new ArrayList<>();
         // can i manipulate the number of children for this AST?
-        // if childcount == 1, then first 5 cases
-        // if childcount == 2, one case
-        // if childcount == 3, 4 cases
-        // if childcount == 4, one case w/ filter
+        // if childcount == 1, then first 5 cases: tagname, '*', '.', '..', text()
+        // if childcount == 2, one case: attribute case
+        // if childcount == 3, 4 cases: '/', '//', ,',' and parentheses rp list case
+        // if childcount == 4, one case: filter case
         switch (AST.getChildCount()) {
             case 1: {
                 ParseTree child = AST.getChild(0);
@@ -130,8 +126,6 @@ public class XPathProcessor {
                 if (child instanceof XPathParser.AttributeNameContext) {
                     // implement attribute helper function
                     result.addAll((Collection<? extends Node>) DOMElement.getAttributeNode(child.getText()));
-//                    DOMElement.getAttribute()
-//                    DOMElement
                 }
                 break;
             }
@@ -188,9 +182,6 @@ public class XPathProcessor {
                         if (parseFilter((Element) intermediate, filter)) {
                             result.add(intermediate);
                         }
-//                        if (AST.getText().equals("SPEECH")) {
-                            System.out.println("AST: " + AST.getText() + " filter: " + parseFilter((Element) intermediate, filter));
-//                        }
                     }
                 }
             }
@@ -200,12 +191,11 @@ public class XPathProcessor {
     }
 
     private static boolean parseFilter(Element DOMElement, ParseTree AST) {
-//        System.out.println(AST.getChildCount());
         // can i manipulate the number of children for this AST?
-        // if childcount == 1, then 1 case
-        // if childcount == 2, then 1 case
-        // if childcount == 3, 7 cases
-        // if childcount == 5, one case
+        // if childcount == 1, then 1 case: empty rp list case
+        // if childcount == 2, then 1 case: not case
+        // if childcount == 3, 7 cases: =, eq, ==, is, and, or, and parentheses (last else statements)
+        // if childcount == 5, one case: STRING CONSTANT case
         switch (AST.getChildCount()) {
             case 1: {
                 ParseTree child = AST.getChild(0);
