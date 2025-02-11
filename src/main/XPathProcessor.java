@@ -123,15 +123,15 @@ public class XPathProcessor {
             }
             case "//": {
                 // the second case operates on all the root's descendants which includes the root's direct and indirect children
-
-                // first, we search for children satisfying the relative path from the root
-                Set<Node> result = new LinkedHashSet<>(parse(DOMTree.getDocumentElement(), ((XPathParser.AbsolutePathContext) AST).relativePath()));
-
-                // second, we parse over all the root's descendants satisfying the relative path
-                // NOTE: Here, node n may be a Text node as well
-                for (Node n : getDescendants(DOMTree.getDocumentElement()))
-                    result.addAll(parse(n, ((XPathParser.AbsolutePathContext) AST).relativePath()));
-
+                Set<Node> found = new LinkedHashSet<>(); // Ensuring uniqueness
+                List<Node> result = new ArrayList<>();
+                // we parse over all the root's descendants satisfying the relative path
+                for (Node n : getDescendants(DOMTree.getDocumentElement())) {
+                    if (n.getNodeName().equals(AST.getChild(4).getText()) && !found.contains(n)) {
+                        result.add(n);
+                        found.add(n);
+                    }
+                }
                 return new ArrayList<>(result);
             }
         }
@@ -222,15 +222,14 @@ public class XPathProcessor {
                             break;
                         }
                         case "//": {
-                            Set<Node> uniqueNodes = new LinkedHashSet<>(); // Ensuring uniqueness
-                            // first, include all DOMElement/rp2 cases
-                            uniqueNodes.addAll(parse(DOMElement, rp2));
-
+                            Set<Node> found = new LinkedHashSet<>(); // Ensuring uniqueness
                             // next, we evaluate for DOMElement/descendant/rp2
-                            for (Node descendant : getDescendants((Element) DOMElement))
-                                uniqueNodes.addAll(parse(descendant, rp2));
-
-                            result.addAll(uniqueNodes);
+                            for (Node descendant : getDescendants((Element) DOMElement)) {
+                                if (descendant.getNodeName().equals(AST.getChild(2).getText()) && !found.contains(descendant)) {
+                                    result.add(descendant);
+                                    found.add(descendant);
+                                }
+                            }
                             break;
                         }
                         case ",": {
