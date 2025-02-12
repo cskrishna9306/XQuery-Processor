@@ -1,1 +1,1 @@
-doc("j_caesar.xml")//SCENE
+doc("j_caesar.xml")//PERSONA

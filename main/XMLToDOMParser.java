@@ -1,3 +1,4 @@
+package main;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -65,6 +66,7 @@ public class XMLToDOMParser {
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes"); // Pretty print
+            transformer.setOutputProperty(javax.xml.transform.OutputKeys.OMIT_XML_DECLARATION, "yes"); // Omit XML declaration
 
             File outputFile = new File(fileName);
             transformer.transform(new DOMSource(tempDoc), new StreamResult(outputFile));

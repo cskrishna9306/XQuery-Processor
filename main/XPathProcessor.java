@@ -1,3 +1,4 @@
+package main;
 import org.w3c.dom.*;
 
 import java.util.*;
@@ -7,11 +8,15 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-// Custom import packages
-import com.example.antlr4.XPathLexer;
-import com.example.antlr4.XPathParser;
+import main.antlr.XPathLexer;
+import main.antlr.XPathParser;
+
 
 public class XPathProcessor {
+    String inputXMLPath;
+    public XPathProcessor(String inputXMLPath) {
+        this.inputXMLPath = inputXMLPath;
+    }
 
     /**
      * This function retrieves all the direct children of the node parent.
@@ -23,7 +28,7 @@ public class XPathProcessor {
      * @param parent the element to find children of
      * @return list of children nodes of parent
      */
-    private static List<Node> getChildren(Node parent) {
+    private List<Node> getChildren(Node parent) {
         List<Node> childrenList = new ArrayList<>();
         NodeList children = parent.getChildNodes();
 
@@ -41,7 +46,7 @@ public class XPathProcessor {
      * @param DOMElement the element to find descendants of
      * @return list of descendant nodes of DOMElement
      */
-    private static List<Node> getDescendants(Element DOMElement) {
+    private List<Node> getDescendants(Element DOMElement) {
         List<Node> descendants = new ArrayList<>();
 
         for (Node child : getChildren(DOMElement)) {
@@ -65,7 +70,7 @@ public class XPathProcessor {
      *
      * @param nodes list of result nodes to display
      */
-    private static void printNodes(List<Node> nodes) {
+    private void printNodes(List<Node> nodes) {
         for (Node node : nodes)
             System.out.println("Found Node: " + node.getNodeName() + " -> " + node.getTextContent().trim());
     }
@@ -80,7 +85,7 @@ public class XPathProcessor {
      * @param AST the current position in the AST
      * @return the list of nodes fitting the XPath query
      */
-    public static List<Node> parse(Node DOMElement, ParseTree AST) {
+    public List<Node> parse(Node DOMElement, ParseTree AST) {
 
         // evaluate the entry point
         if (AST instanceof XPathParser.EvalContext)
@@ -106,12 +111,13 @@ public class XPathProcessor {
      * @param AST the current position in the AST
      * @return the list of nodes satisfying the XPath query
      */
-    private static List<Node> parseAbsolutePath(ParseTree AST) {
+    private List<Node> parseAbsolutePath(ParseTree AST) {
 
         // retrieve and store the file name mentioned in the XPath query
         String fileName = ((XPathParser.AbsolutePathContext) AST).fileName().STRING().toString();
         // dynamically create the DOM tree for the specified XML file
-        Document DOMTree = XMLToDOMParser.parse("src/main/" + fileName);
+//        Document DOMTree = XMLToDOMParser.parse("src/main/" + fileName);
+        Document DOMTree = XMLToDOMParser.parse(inputXMLPath);
 
         // here we evaluate absolute path in one of 2 cases:
         //  i. "/" - evaluate at the current element (root)
@@ -145,7 +151,7 @@ public class XPathProcessor {
      * @param AST the current position in the AST
      * @return the list of nodes satisfying this XPath query
      */
-    private static List<Node> parseRelativePath(Node DOMElement, ParseTree AST) {
+    private List<Node> parseRelativePath(Node DOMElement, ParseTree AST) {
 
         // list containing the final result
         List<Node> result = new ArrayList<>();
@@ -270,7 +276,7 @@ public class XPathProcessor {
      * @param AST the current position in the AST
      * @return true if the filter holds at DOMElement, otherwise false
      */
-    private static boolean parseFilter(Element DOMElement, ParseTree AST) {
+    private boolean parseFilter(Element DOMElement, ParseTree AST) {
         // can i manipulate the number of children for this AST?
         // if childcount == 1, then 1 case
         // if childcount == 2, then 1 case

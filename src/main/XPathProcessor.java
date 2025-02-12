@@ -6,7 +6,7 @@ import java.util.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 // Custom import packages
-//import com.example.antlr4.XPathParser;
+import com.example.antlr4.XPathParser;
 
 public class XPathProcessor {
 

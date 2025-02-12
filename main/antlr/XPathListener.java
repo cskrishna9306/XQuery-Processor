@@ -1,4 +1,5 @@
-// Generated from XPath.g4 by ANTLR 4.13.1
+// Generated from main/antlr/XPath.g4 by ANTLR 4.13.1
+package main.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
