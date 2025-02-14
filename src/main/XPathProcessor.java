@@ -294,11 +294,10 @@ public class XPathProcessor {
                         case "=":
                         case "eq": {
                             if (!(rp2 instanceof XQueryParser.RelativePathContext)) {
-                                ParseTree string = rp2;
-                                System.out.println(string.getText());
+                                String string = rp2.getText().substring(1, rp2.getText().length() - 1);
 
                                 for (Node n : parseRelativePath(DOMElement, rp1))
-                                    if (n.getTextContent().equals(string.getText()))
+                                    if (n.getTextContent().equals(string))
                                         return true;
                                 break;
                             }
@@ -334,16 +333,6 @@ public class XPathProcessor {
                     return parseFilter(DOMElement, AST.getChild(1));
                 }
                 break;
-            }
-            case 5: {
-                ParseTree rp = AST.getChild(0);
-                ParseTree string = AST.getChild(3);
-
-                if (rp instanceof XQueryParser.RelativePathContext) {
-                    for (Node n : parseRelativePath(DOMElement, rp))
-                        if (n.getTextContent().equals(string.getText()))
-                            return true;
-                }
             }
         }
 
