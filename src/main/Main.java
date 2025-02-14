@@ -1,54 +1,49 @@
-import org.antlr.v4.runtime.ANTLRFileStream;
+package main;
+import org.w3c.dom.*;
+
+// ANTLR import statements
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import com.example.antlr4.ExpLexer;
-import com.example.antlr4.ExpParser;
+import java.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.util.Scanner;
+
+
+import com.example.antlr.XPathLexer;
+import com.example.antlr.XPathParser;
+
+
 
 public class Main {
-    public static void main(String[] args) throws Exception {
-        String fname = args[0];
-        ExpLexer lexer = new ExpLexer(new ANTLRFileStream(fname));
-        ExpParser parser = new ExpParser(new CommonTokenStream(lexer));
-        ParseTree tree = parser.eval();
-        System.out.println(compute(tree));
-    }
+    public static void main(String[] args) {
+        // Step 1: Read the XPath query
+        // Step 2: Extract the file name from the absolute path, and build the DOM tree of this file
+        // Step 3: Process the rest of the XPath
+        try {
+            String inputXMLPath = args[0];
+            String queryTxtPath = args[1];
+            String outputFilename = args[2];
+            try (Scanner scanner = new Scanner(new File(queryTxtPath))) {
+                while (scanner.hasNextLine()) {
+                    // Process each line here
+                    String query = scanner.nextLine();
+                    System.out.println("Query: " + query);
+                    XPathLexer lexer = new XPathLexer(CharStreams.fromString(query));
+                    XPathParser parser = new XPathParser(new CommonTokenStream(lexer));
 
-   private static double compute(ParseTree t) {
-     if (t instanceof ExpParser.EvalContext) {
-        return compute(t.getChild(0));
-     }
-     if (t instanceof ExpParser.AdditionExpContext) {
-        double soFar = compute(t.getChild(0));
-        for (int i = 1; i < t.getChildCount(); i+=2) {
-           double nextExpVal = compute(t.getChild(i+1));        
-   	   if (t.getChild(i).getText().equals("+")) {
-             soFar = soFar + nextExpVal;
-           } else {
-             soFar = soFar - nextExpVal;
-           }           
+                    ParseTree AST = parser.eval();
+                    XPathProcessor xpp = new XPathProcessor(inputXMLPath);
+                    List<Node> result = xpp.parse(null, AST);
+                    XMLToDOMParser.exportToXML(result, outputFilename);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return soFar;
-     }           
-     if (t instanceof ExpParser.MultiplyExpContext) {
-        double soFar = compute(t.getChild(0));
-        for (int i = 1; i < t.getChildCount(); i+=2) {
-           double nextExpVal = compute(t.getChild(i+1));        
-   	   if (t.getChild(i).getText().equals("*")) {
-             soFar = soFar * nextExpVal;
-           } else {
-             soFar = soFar / nextExpVal;
-           }           
-        }           
-        return soFar;
-     }
-     if (t instanceof ExpParser.AtomExpContext) {
-       if (t.getChildCount() > 1) {
-         return compute(t.getChild(1));
-       }
-       return Double.parseDouble(t.getChild(0).getText());
-     }
-     // will never reach here, just pleasing Java compiler    
-     return 0.0;
-   }
+    }
 }
