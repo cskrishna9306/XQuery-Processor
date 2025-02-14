@@ -9,8 +9,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.List;
 
-import com.example.antlr4.XPathLexer;
-import com.example.antlr4.XPathParser;
+import com.example.antlr4.XQueryLexer;
+import com.example.antlr4.XQueryParser;
 
 public class Main {
     public static void main(String[] args) {
@@ -24,8 +24,8 @@ public class Main {
             // args[1] - contains the input XPath query
             BufferedReader br = new BufferedReader(new FileReader(args[1]));
 
-            XPathLexer lexer = new XPathLexer(CharStreams.fromString(br.readLine()));
-            XPathParser parser = new XPathParser(new CommonTokenStream(lexer));
+            XQueryLexer lexer = new XQueryLexer(CharStreams.fromString(br.readLine()));
+            XQueryParser parser = new XQueryParser(new CommonTokenStream(lexer));
 
             ParseTree AST = parser.eval();
 

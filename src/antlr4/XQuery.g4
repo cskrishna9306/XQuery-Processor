@@ -7,26 +7,26 @@ eval
 
 // Parser rules for XQuery
 xQuery
-    : var
-    | ('"' | '“') STRING ('"' | '”')
+    : VAR
+    | STRING
     | absolutePath
     | '(' xQuery ')'
     | xQuery ',' xQuery
     | xQuery '/' relativePath
     | xQuery '//' relativePath
-    | '<' tagName '>' '{' xQuery '}' '</' tagName '>'
+    | '<' TAGNAME '>' '{' xQuery '}' '</' TAGNAME '>'
     | forClause letClause whereClause returnClause
-    | 'let' var ':=' xQuery (',' var ':=' xQuery)* xQuery
+    | 'let' VAR ':=' xQuery (',' VAR ':=' xQuery)* xQuery
     ;
 
 // Parser rules for the for clause
 forClause
-    : 'for' var 'in' xQuery (',' var 'in' xQuery)*
+    : 'for' VAR 'in' xQuery (',' VAR 'in' xQuery)*
     ;
 
 // Parser rules for let clause including the empty clause
 letClause
-    : 'let' var ':=' xQuery (',' var ':=' xQuery)*
+    : 'let' VAR ':=' xQuery (',' VAR ':=' xQuery)*
     |
     ;
 
@@ -48,7 +48,7 @@ condition
     | xQuery '==' xQuery
     | xQuery 'is' xQuery
     | 'empty(' xQuery ')'
-    | 'some' var 'in' xQuery (',' var 'in' xQuery)* 'satisfies' condition
+    | 'some' VAR 'in' xQuery (',' VAR 'in' xQuery)* 'satisfies' condition
     | '(' condition ')'
     | condition 'and' condition
     | condition 'or' condition
@@ -57,18 +57,18 @@ condition
 
 // Parser rules for absolute path
 absolutePath
-  : 'doc(' fileName ')' '/' relativePath
-  | 'doc(' fileName ')' '//' relativePath
+  : 'doc(' STRING ')' '/' relativePath
+  | 'doc(' STRING ')' '//' relativePath
   ;
 
 // Parser rules for relative path
 relativePath
-  : tagName
+  : TAGNAME
   | '*'
   | '.'
   | '..'
   | 'text()'
-  | '@' attributeName
+  | '@' ATTRIBUTENAME
   | '(' relativePath ')'
   | relativePath '/' relativePath
   | relativePath '//' relativePath
@@ -83,7 +83,7 @@ filter
   | relativePath 'eq' relativePath
   | relativePath '==' relativePath
   | relativePath 'is' relativePath
-  | relativePath '=' ('"' | '“') STRING ('"' | '”')
+  | relativePath '=' STRING
   | '(' filter ')'
   | filter 'and' filter
   | filter 'or' filter
@@ -91,13 +91,14 @@ filter
   ;
 
 // Lexer rules
-var: '$' STRING;
-tagName: STRING ;
-attributeName: STRING ;
-fileName: ('"' | '“') STRING ('"' | '”') ;
+VAR: '$' LETTER (LETTER | DIGIT | '_')* ;
+TAGNAME: LETTER (LETTER | DIGIT)* ;
+ATTRIBUTENAME: LETTER (LETTER | DIGIT | '_' | '-')* ;
+//FILENAME: STRING;
 
 // Define operators and other symbols as fragments
-STRING: (LETTER | DIGIT | '_' | '.')+;
+STRING: ('"' | '“') (~["\r\n])* ('"' | '”') ;
+//STRING: (LETTER | DIGIT | '_' | '.')+;
 DIGIT: [0-9] ;
 LETTER: [a-zA-Z] ;
 

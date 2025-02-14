@@ -6,7 +6,7 @@ import java.util.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 // Custom import packages
-import com.example.antlr4.XPathParser;
+import com.example.antlr4.XQueryParser;
 
 public class XPathProcessor {
 
@@ -80,15 +80,15 @@ public class XPathProcessor {
     public static List<Node> parse(Node DOMElement, ParseTree AST) {
 
         // evaluate the entry point
-        if (AST instanceof XPathParser.EvalContext)
-            return parse(DOMElement, ((XPathParser.EvalContext) AST).absolutePath());
+        if (AST instanceof XQueryParser.EvalContext)
+            return parse(DOMElement, ((XQueryParser.EvalContext) AST).xQuery().absolutePath());
 
         // evaluate absolute path expression
-        if (AST instanceof XPathParser.AbsolutePathContext)
+        if (AST instanceof XQueryParser.AbsolutePathContext)
             return parseAbsolutePath((Element) DOMElement, AST);
 
         // evaluate relative path expression
-        if (AST instanceof XPathParser.RelativePathContext)
+        if (AST instanceof XQueryParser.RelativePathContext)
             return parseRelativePath(DOMElement, AST);
 
         return null;
@@ -111,18 +111,18 @@ public class XPathProcessor {
         switch (AST.getChild(3).getText()) {
             case "/": {
                 // the first cases operates from the root's perspective, evaluating all the children of the root
-                return parse(DOMElement, ((XPathParser.AbsolutePathContext) AST).relativePath());
+                return parse(DOMElement, ((XQueryParser.AbsolutePathContext) AST).relativePath());
             }
             case "//": {
                 // the second case operates on all the root's descendants which includes the root's direct and indirect children
 
                 // first, we search for children satisfying the relative path from the root
-                Set<Node> result = new LinkedHashSet<>(parse(DOMElement, ((XPathParser.AbsolutePathContext) AST).relativePath()));
+                Set<Node> result = new LinkedHashSet<>(parse(DOMElement, ((XQueryParser.AbsolutePathContext) AST).relativePath()));
 
                 // second, we parse over all the root's descendants satisfying the relative path
                 // NOTE: Here, node n may be a Text node as well
                 for (Node n : getDescendants(DOMElement))
-                    result.addAll(parse(n, ((XPathParser.AbsolutePathContext) AST).relativePath()));
+                    result.addAll(parse(n, ((XQueryParser.AbsolutePathContext) AST).relativePath()));
 
                 return new ArrayList<>(result);
             }
@@ -146,53 +146,51 @@ public class XPathProcessor {
         switch (AST.getChildCount()) {
             case 1: {
                 ParseTree child = AST.getChild(0);
-                // CASE tagName
-                if (child instanceof XPathParser.TagNameContext) {
-                    // search for matching Element nodes in the DOM
-                    for (Node node : getChildren(DOMElement))
-                        if (node.getNodeName().equals(child.getText()) && node.getNodeType() == Node.ELEMENT_NODE)
-                            result.add(node);
-                } else {
-                    // differentiate single child AST node by its text
-                    switch (child.getText()) {
-                        case "*": {
-                            result.addAll(getChildren(DOMElement));
-                            break;
-                        }
-                        case ".": {
-                            result.add(DOMElement);
-                            break;
-                        }
-                        case "..": {
-                            result.add(DOMElement.getParentNode());
-                            break;
-                        }
-                        case "text()": {
-                            // iterate over all children and return text nodes
-                            for (Node node : getChildren(DOMElement))
-                                if (node.getNodeType() == Node.TEXT_NODE)
-                                    result.add(node);
-                            break;
-                        }
+
+                // differentiate single child AST node by its text
+                switch (child.getText()) {
+                    case "*": {
+                        result.addAll(getChildren(DOMElement));
+                        break;
+                    }
+                    case ".": {
+                        result.add(DOMElement);
+                        break;
+                    }
+                    case "..": {
+                        result.add(DOMElement.getParentNode());
+                        break;
+                    }
+                    case "text()": {
+                        // iterate over all children and return text nodes
+                        for (Node node : getChildren(DOMElement))
+                            if (node.getNodeType() == Node.TEXT_NODE)
+                                result.add(node);
+                        break;
+                    }
+                    default: {
+                        // search for matching Element nodes in the DOM
+                        for (Node node : getChildren(DOMElement))
+                            if (node.getNodeName().equals(child.getText()) && node.getNodeType() == Node.ELEMENT_NODE)
+                                result.add(node);
+                        break;
                     }
                 }
+
                 break;
             }
             case 2: {
                 // the attribute case
                 ParseTree child = AST.getChild(1);
-                if (child instanceof XPathParser.AttributeNameContext) {
-                    // iterate over all children and return attribute nodes
-                    for (Node node : getChildren(DOMElement))
-                        // only add this node if it is an Attr node and shares the same name as the one we are searching for
-                        if (node.getNodeType() == Node.ATTRIBUTE_NODE && node.getNodeName().equals(child.getText()))
-                            result.add(node);
-                }
+                for (Node node : getChildren(DOMElement))
+                    // only add this node if it is an Attr node and shares the same name as the one we are searching for
+                    if (node.getNodeType() == Node.ATTRIBUTE_NODE && node.getNodeName().equals(child.getText()))
+                        result.add(node);
                 break;
             }
             case 3: {
 
-                if (AST.getChild(0) instanceof XPathParser.RelativePathContext) {
+                if (AST.getChild(0) instanceof XQueryParser.RelativePathContext) {
 
                     // rp1 has to be an element node
                     ParseTree rp1 = AST.getChild(0);
@@ -242,7 +240,7 @@ public class XPathProcessor {
                 ParseTree rp = AST.getChild(0);
                 ParseTree filter = AST.getChild(2);
 
-                if (rp instanceof XPathParser.RelativePathContext && filter instanceof XPathParser.FilterContext) {
+                if (rp instanceof XQueryParser.RelativePathContext && filter instanceof XQueryParser.FilterContext) {
                     // first, we retrieve all children fitting DOMElement/rp
                     for (Node intermediate : parseRelativePath(DOMElement, rp))
                         // next, we evaluate the filter over each of DOMElement/rp
@@ -271,14 +269,14 @@ public class XPathProcessor {
         switch (AST.getChildCount()) {
             case 1: {
                 ParseTree child = AST.getChild(0);
-                if (child instanceof XPathParser.RelativePathContext)
+                if (child instanceof XQueryParser.RelativePathContext)
                     if (!parseRelativePath(DOMElement, child).isEmpty())
                         return true;
                 break;
             }
             case 2: {
                 ParseTree child = AST.getChild(1);
-                if (AST.getChild(0).getText().equals("not") && child instanceof XPathParser.FilterContext) {
+                if (AST.getChild(0).getText().equals("not") && child instanceof XQueryParser.FilterContext) {
                     // implement not filter case
                     if (!parseFilter(DOMElement, child))
                         return true;
@@ -287,7 +285,7 @@ public class XPathProcessor {
             }
             case 3: {
                 ParseTree child = AST.getChild(0);
-                if (child instanceof XPathParser.RelativePathContext) {
+                if (child instanceof XQueryParser.RelativePathContext) {
 
                     ParseTree rp1 = AST.getChild(0);
                     ParseTree rp2 = AST.getChild(2);
@@ -295,6 +293,16 @@ public class XPathProcessor {
                     switch (AST.getChild(1).getText()) {
                         case "=":
                         case "eq": {
+                            if (!(rp2 instanceof XQueryParser.RelativePathContext)) {
+                                ParseTree string = rp2;
+                                System.out.println(string.getText());
+
+                                for (Node n : parseRelativePath(DOMElement, rp1))
+                                    if (n.getTextContent().equals(string.getText()))
+                                        return true;
+                                break;
+                            }
+
                             List<Node> rp1Nodes = parseRelativePath(DOMElement, rp1);
                             List<Node> rp2Nodes = parseRelativePath(DOMElement, rp2);
 
@@ -315,7 +323,7 @@ public class XPathProcessor {
                         }
                     }
 
-                } else if (child instanceof XPathParser.FilterContext) {
+                } else if (child instanceof XQueryParser.FilterContext) {
                     switch (AST.getChild(1).getText()) {
                         case "and":
                             return parseFilter(DOMElement, AST.getChild(0)) && parseFilter(DOMElement, AST.getChild(2));
@@ -331,7 +339,7 @@ public class XPathProcessor {
                 ParseTree rp = AST.getChild(0);
                 ParseTree string = AST.getChild(3);
 
-                if (rp instanceof XPathParser.RelativePathContext) {
+                if (rp instanceof XQueryParser.RelativePathContext) {
                     for (Node n : parseRelativePath(DOMElement, rp))
                         if (n.getTextContent().equals(string.getText()))
                             return true;
