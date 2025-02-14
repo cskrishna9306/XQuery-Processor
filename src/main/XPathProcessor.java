@@ -3,12 +3,9 @@ import org.w3c.dom.*;
 import java.util.*;
 
 // ANTLR import statements
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 // Custom import packages
-import com.example.antlr4.XPathLexer;
 import com.example.antlr4.XPathParser;
 
 public class XPathProcessor {
@@ -84,11 +81,11 @@ public class XPathProcessor {
 
         // evaluate the entry point
         if (AST instanceof XPathParser.EvalContext)
-            return parse(null, ((XPathParser.EvalContext) AST).absolutePath());
+            return parse(DOMElement, ((XPathParser.EvalContext) AST).absolutePath());
 
         // evaluate absolute path expression
         if (AST instanceof XPathParser.AbsolutePathContext)
-            return parseAbsolutePath(AST);
+            return parseAbsolutePath((Element) DOMElement, AST);
 
         // evaluate relative path expression
         if (AST instanceof XPathParser.RelativePathContext)
@@ -106,12 +103,7 @@ public class XPathProcessor {
      * @param AST the current position in the AST
      * @return the list of nodes satisfying the XPath query
      */
-    private static List<Node> parseAbsolutePath(ParseTree AST) {
-
-        // retrieve and store the file name mentioned in the XPath query
-        String fileName = ((XPathParser.AbsolutePathContext) AST).fileName().STRING().toString();
-        // dynamically create the DOM tree for the specified XML file
-        Document DOMTree = XMLToDOMParser.parse("src/main/" + fileName);
+    private static List<Node> parseAbsolutePath(Element DOMElement, ParseTree AST) {
 
         // here we evaluate absolute path in one of 2 cases:
         //  i. "/" - evaluate at the current element (root)
@@ -119,17 +111,17 @@ public class XPathProcessor {
         switch (AST.getChild(3).getText()) {
             case "/": {
                 // the first cases operates from the root's perspective, evaluating all the children of the root
-                return parse(DOMTree.getDocumentElement(), ((XPathParser.AbsolutePathContext) AST).relativePath());
+                return parse(DOMElement, ((XPathParser.AbsolutePathContext) AST).relativePath());
             }
             case "//": {
                 // the second case operates on all the root's descendants which includes the root's direct and indirect children
 
                 // first, we search for children satisfying the relative path from the root
-                Set<Node> result = new LinkedHashSet<>(parse(DOMTree.getDocumentElement(), ((XPathParser.AbsolutePathContext) AST).relativePath()));
+                Set<Node> result = new LinkedHashSet<>(parse(DOMElement, ((XPathParser.AbsolutePathContext) AST).relativePath()));
 
                 // second, we parse over all the root's descendants satisfying the relative path
                 // NOTE: Here, node n may be a Text node as well
-                for (Node n : getDescendants(DOMTree.getDocumentElement()))
+                for (Node n : getDescendants(DOMElement))
                     result.addAll(parse(n, ((XPathParser.AbsolutePathContext) AST).relativePath()));
 
                 return new ArrayList<>(result);
@@ -349,22 +341,4 @@ public class XPathProcessor {
 
         return false;
     }
-
-    public static void main(String[] args) {
-        // Step 1: Read the XPath query
-        // Step 2: Extract the file name from the absolute path, and build the DOM tree of this file
-        // Step 3: Process the rest of the XPath
-        try {
-            XPathLexer lexer = new XPathLexer(CharStreams.fromString(args[0]));
-            XPathParser parser = new XPathParser(new CommonTokenStream(lexer));
-
-            ParseTree AST = parser.eval();
-
-            List<Node> result = parse(null, AST);
-            XMLToDOMParser.exportToXML(result, "result.xml");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    } 
 }

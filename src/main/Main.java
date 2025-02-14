@@ -1,4 +1,3 @@
-package main;
 import org.w3c.dom.*;
 
 // ANTLR import statements
@@ -6,16 +5,12 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.List;
-import java.io.File;
-import java.io.IOException;
-import java.util.Scanner;
 
-
-import com.example.antlr.XPathLexer;
-import com.example.antlr.XPathParser;
-
-
+import com.example.antlr4.XPathLexer;
+import com.example.antlr4.XPathParser;
 
 public class Main {
     public static void main(String[] args) {
@@ -23,25 +18,20 @@ public class Main {
         // Step 2: Extract the file name from the absolute path, and build the DOM tree of this file
         // Step 3: Process the rest of the XPath
         try {
-            String inputXMLPath = args[0];
-            String queryTxtPath = args[1];
-            String outputFilename = args[2];
-            try (Scanner scanner = new Scanner(new File(queryTxtPath))) {
-                while (scanner.hasNextLine()) {
-                    // Process each line here
-                    String query = scanner.nextLine();
-                    System.out.println("Query: " + query);
-                    XPathLexer lexer = new XPathLexer(CharStreams.fromString(query));
-                    XPathParser parser = new XPathParser(new CommonTokenStream(lexer));
+            // args[0] - path to XML file
+            Document DOMTree = XMLToDOMParser.parse(args[0]);
 
-                    ParseTree AST = parser.eval();
-                    XPathProcessor xpp = new XPathProcessor(inputXMLPath);
-                    List<Node> result = xpp.parse(null, AST);
-                    XMLToDOMParser.exportToXML(result, outputFilename);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            // args[1] - contains the input XPath query
+            BufferedReader br = new BufferedReader(new FileReader(args[1]));
+
+            XPathLexer lexer = new XPathLexer(CharStreams.fromString(br.readLine()));
+            XPathParser parser = new XPathParser(new CommonTokenStream(lexer));
+
+            ParseTree AST = parser.eval();
+
+            // args[2] - output file
+            List<Node> result = XPathProcessor.parse(DOMTree.getDocumentElement(), AST);
+            XMLToDOMParser.exportToXML(result, args[2]);
         } catch (Exception e) {
             e.printStackTrace();
         }
