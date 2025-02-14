@@ -5,31 +5,6 @@ eval
     : xQuery
     ;
 
-
-//xQuery
-//    : primaryXQ xqSuffix*
-//    ;
-//
-//primaryXQ
-//    : test
-//    ;
-//
-//xqSuffix
-//    : '/' relativePath                         # XQRelativePath
-//    | '//' relativePath                         # XQDescendantPath
-//    | ',' xQuery                         # CommaExpr
-//    ;
-//
-//test
-//    : var                             # Variable
-//    | STRING                          # StringConstant
-//    | absolutePath                              # AbsolutePathExpr
-//    | '(' primaryXQ ')'                      # GroupedXQ
-//    | '<' tagName '>' primaryXQ '</' tagName '>' # ElementConstructor
-//    | forClause letClause whereClause returnClause # FLWRExpr
-//    | letClause primaryXQ                    # LetXQ
-//    ;
-
 // Parser rules for XQuery
 xQuery
     : var
@@ -41,7 +16,7 @@ xQuery
     | xQuery '//' relativePath
     | '<' tagName '>' '{' xQuery '}' '</' tagName '>'
     | forClause letClause whereClause returnClause
-    | letClause xQuery
+    | 'let' var ':=' xQuery (',' var ':=' xQuery)* xQuery
     ;
 
 // Parser rules for the for clause
