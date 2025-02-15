@@ -169,6 +169,7 @@ public class XPathProcessor {
                         break;
                     }
                     default: {
+                        // NOTE: Case for tag name
                         // search for matching Element nodes in the DOM
                         for (Node node : getChildren(DOMElement))
                             if (node.getNodeName().equals(child.getText()) && node.getNodeType() == Node.ELEMENT_NODE)
@@ -309,6 +310,7 @@ public class XPathProcessor {
                                 for (Node n2 : rp2Nodes)
                                     if (n1.isEqualNode(n2))
                                         return true;
+                            break;
                         }
                         case "==":
                         case "is": {
@@ -319,6 +321,7 @@ public class XPathProcessor {
                                 for (Node n2 : rp2Nodes)
                                     if (n1.isSameNode(n2))
                                         return true;
+                            break;
                         }
                     }
 

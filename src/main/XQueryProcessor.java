@@ -60,6 +60,67 @@ public class XQueryProcessor {
      * @return true if the condition holds at DOMElement, otherwise false
      */
     private static boolean parseCondition(Element DOMElement, ParseTree AST) {
+
+        switch (AST.getChildCount()) {
+            case 2: {
+                ParseTree child = AST.getChild(1);
+                if (AST.getChild(0).getText().equals("not") && child instanceof XQueryParser.ConditionContext) {
+                    // implement not condition case
+                    if (!parseCondition(DOMElement, child))
+                        return true;
+                }
+                break;
+            }
+            case 3: {
+                ParseTree child = AST.getChild(0);
+
+                if (child instanceof XQueryParser.XQueryContext) {
+
+                    List<Node> xq1Nodes = parseXQuery(DOMElement, AST.getChild(0));
+                    List<Node> xq2Nodes = parseXQuery(DOMElement, AST.getChild(2));
+
+                    switch (AST.getChild(1).getText()) {
+                        case "=":
+                        case "eq": {
+
+                            for (Node n1 : xq1Nodes)
+                                for (Node n2 : xq2Nodes)
+                                    if (n1.isEqualNode(n2))
+                                        return true;
+                            break;
+                        }
+                        case "==":
+                        case "is": {
+
+                            for (Node n1 : xq1Nodes)
+                                for (Node n2 : xq2Nodes)
+                                    if (n1.isSameNode(n2))
+                                        return true;
+                            break;
+                        }
+                    }
+                } else if (child instanceof XQueryParser.ConditionContext) {
+                    switch (AST.getChild(1).getText()) {
+                        case "and":
+                            return parseCondition(DOMElement, AST.getChild(0)) && parseCondition(DOMElement, AST.getChild(2));
+                        case "or":
+                            return parseCondition(DOMElement, AST.getChild(0)) || parseCondition(DOMElement, AST.getChild(2));
+                    }
+                } else if (child.getText().equals("empty(")) {
+                    ParseTree xq = AST.getChild(1);
+                    if (xq instanceof XQueryParser.XQueryContext)
+                        return parseXQuery(DOMElement, child).isEmpty();
+                    break;
+                } else if (child.getText().equals("(")) {
+                    return parseCondition(DOMElement, AST.getChild(1));
+                }
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+
         return false;
     }
 
