@@ -15,8 +15,8 @@ xQuery
     | xQuery '/' relativePath
     | xQuery '//' relativePath
     | '<' TAGNAME '>' '{' xQuery '}' '</' TAGNAME '>'
-    | forClause letClause whereClause returnClause
-    | 'let' VAR ':=' xQuery (',' VAR ':=' xQuery)* xQuery
+    | forClause (letClause | ) whereClause returnClause
+    | letClause xQuery
     ;
 
 // Parser rules for the for clause
@@ -27,7 +27,6 @@ forClause
 // Parser rules for let clause including the empty clause
 letClause
     : 'let' VAR ':=' xQuery (',' VAR ':=' xQuery)*
-    |
     ;
 
 // Parser rules for where clause including the empty clause

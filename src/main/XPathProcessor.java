@@ -212,9 +212,9 @@ public class XPathProcessor {
                             break;
                         }
                         case "//": {
-                            Set<Node> uniqueNodes = new LinkedHashSet<>(); // Ensuring uniqueness
                             // first, include all DOMElement/rp2 cases
-                            uniqueNodes.addAll(parse(DOMElement, rp2));
+                            // Ensuring uniqueness
+                            Set<Node> uniqueNodes = new LinkedHashSet<>(parse(DOMElement, rp2));
 
                             // next, we evaluate for DOMElement/descendant/rp2
                             for (Node descendant : getDescendants((Element) DOMElement))

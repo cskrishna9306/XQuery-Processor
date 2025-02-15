@@ -30,7 +30,7 @@ public class Main {
             ParseTree AST = parser.eval();
 
             // args[2] - output file
-            List<Node> result = XPathProcessor.parse(DOMTree.getDocumentElement(), AST);
+            List<Node> result = XQueryProcessor.parse(DOMTree.getDocumentElement(), AST);
             XMLToDOMParser.exportToXML(result, args[2]);
         } catch (Exception e) {
             e.printStackTrace();
