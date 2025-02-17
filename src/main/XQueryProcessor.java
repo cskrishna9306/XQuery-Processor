@@ -1,3 +1,5 @@
+import org.antlr.v4.runtime.tree.TerminalNode;
+import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 import org.w3c.dom.*;
 
 import java.util.*;
@@ -7,8 +9,14 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 // Custom import packages
 import com.example.antlr4.XQueryParser;
+import com.example.antlr4.XQueryLexer;
 
 public class XQueryProcessor {
+
+    private static Element makeElement(String tagName, List<Node> children) {
+//        Element element = ;
+        return null;
+    }
 
     /**
      * Entry point function to parse and evaluate all XQuery expressions.
@@ -21,7 +29,7 @@ public class XQueryProcessor {
      * @return the list of nodes fitting the XQuery query
      */
     public static List<Node> parse(Node DOMElement, ParseTree AST) {
-
+//        super.parse();
         // evaluate the entry point
         if (AST instanceof XQueryParser.EvalContext)
             return parse(DOMElement, ((XQueryParser.EvalContext) AST).xQuery());
@@ -43,13 +51,77 @@ public class XQueryProcessor {
      * @return the list of nodes satisfying the XPath query
      */
     private static List<Node> parseXQuery(Element DOMElement, ParseTree AST) {
-        ParseTree child = AST.getChild(0);
 
-        if (child instanceof XQueryParser.AbsolutePathContext) {
-            return XPathProcessor.parse(DOMElement, child);
+        // list containing the final result
+        List<Node> result = new ArrayList<>();
+
+        switch (AST.getChildCount()) {
+            case 1: {
+                ParseTree child = AST.getChild(0);
+
+                if (child instanceof TerminalNode) {
+                    if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.VAR) {
+                        System.out.println(child.getText().substring(1));
+                        break;
+                    } else if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.STRING)
+                        break;
+
+                } else if (child instanceof XQueryParser.AbsolutePathContext)
+                    result.addAll(XPathProcessor.parse(DOMElement, child));
+                break;
+            }
+            case 2: {
+                break;
+            }
+            case 3: {
+                ParseTree separator = AST.getChild(1);
+
+                switch (separator.getText()) {
+                    case ",": {
+                        // case to account for simple concatenation
+                        result.addAll(parse(DOMElement, AST.getChild(0)));
+                        result.addAll(parse(DOMElement, AST.getChild(2)));
+                        break;
+                    }
+                    case "/": {
+                        // recurse only over direct children
+//                            if (DOMElement.getNodeType() == Node.ELEMENT_NODE) {
+                        Set<Node> uniqueNodes = new LinkedHashSet<>(); // Ensuring uniqueness
+                        // first, retrieve all the children of the current DOM node satisfying the XQuery
+                        for (Node node : parse(DOMElement, AST.getChild(0)))
+                            // then, we evaluate rp on each of the above retrieved children
+                            uniqueNodes.addAll(XPathProcessor.parse(node, AST.getChild(2)));
+
+                        result.addAll(uniqueNodes);
+//                            }
+                        break;
+                    }
+                    case "//": {
+                        // first, include all DOMElement/rp cases
+                        // Ensuring uniqueness
+                        Set<Node> uniqueNodes = new LinkedHashSet<>(XPathProcessor.parse(DOMElement, AST.getChild(2)));
+
+                        for (Node node : parse(DOMElement, AST.getChild(0)))
+                            // next, we evaluate for DOMElement/descendant/rp
+                            for (Node descendant : XPathProcessor.getDescendants((Element) node))
+                                uniqueNodes.addAll(XPathProcessor.parse(descendant, AST.getChild(2)));
+
+                        result.addAll(uniqueNodes);
+                        break;
+                    }
+                    default: {
+                        // evaluate ( xQuery )
+                        if (separator instanceof XQueryParser.XQueryContext)
+                            result.addAll(parse(DOMElement, separator));
+                        break;
+                    }
+                }
+
+                break;
+            }
         }
 
-        return null;
+        return result;
     }
 
     /**
