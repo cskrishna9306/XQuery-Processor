@@ -20,7 +20,7 @@ public class XPathProcessor {
      * @param parent the element to find children of
      * @return list of children nodes of parent
      */
-    private static List<Node> getChildren(Node parent) {
+    public static List<Node> getChildren(Node parent) {
         List<Node> childrenList = new ArrayList<>();
         NodeList children = parent.getChildNodes();
 
@@ -38,7 +38,7 @@ public class XPathProcessor {
      * @param DOMElement the element to find descendants of
      * @return list of descendant nodes of DOMElement
      */
-    private static List<Node> getDescendants(Element DOMElement) {
+    public static List<Node> getDescendants(Element DOMElement) {
         List<Node> descendants = new ArrayList<>();
 
         for (Node child : getChildren(DOMElement)) {
