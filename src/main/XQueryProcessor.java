@@ -28,15 +28,15 @@ public class XQueryProcessor {
      * @param AST the current position in the AST
      * @return the list of nodes fitting the XQuery query
      */
-    public static List<Node> parse(Node DOMElement, ParseTree AST) {
+    public static List<Node> parse(Node DOMElement, ParseTree AST, HashMap<String, List<Node>> context) {
 //        super.parse();
         // evaluate the entry point
         if (AST instanceof XQueryParser.EvalContext)
-            return parse(DOMElement, ((XQueryParser.EvalContext) AST).xQuery());
+            return parse(DOMElement, ((XQueryParser.EvalContext) AST).xQuery(), context);
 
         // evaluate XQuery expression
         if (AST instanceof XQueryParser.XQueryContext)
-            return parseXQuery((Element) DOMElement, AST);
+            return parseXQuery((Element) DOMElement, AST, context);
 
         return null;
     }
@@ -50,19 +50,27 @@ public class XQueryProcessor {
      * @param AST the current position in the AST
      * @return the list of nodes satisfying the XPath query
      */
-    private static List<Node> parseXQuery(Element DOMElement, ParseTree AST) {
-
+    private static List<Node> parseXQuery(Element DOMElement, ParseTree AST, HashMap<String, List<Node>> context) {
+        HashMap<String, List<Node>> newContext = new HashMap<>();
+        for (Map.Entry<String, List<Node>> entry : context.entrySet()) {
+            newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
         // list containing the final result
         List<Node> result = new ArrayList<>();
 
         switch (AST.getChildCount()) {
+            // Case for:
+            // [Var]
+            // [StringConst]
+            // [AbsolutePath]
             case 1: {
                 ParseTree child = AST.getChild(0);
 
                 if (child instanceof TerminalNode) {
                     if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.VAR) {
                         System.out.println(child.getText().substring(1));
-                        break;
+                        System.out.println("Value: " + context.get(child.getText().substring(1)));
+                        return context.get(child.getText().substring(1));
                     } else if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.STRING)
                         break;
 
@@ -79,8 +87,8 @@ public class XQueryProcessor {
                 switch (separator.getText()) {
                     case ",": {
                         // case to account for simple concatenation
-                        result.addAll(parse(DOMElement, AST.getChild(0)));
-                        result.addAll(parse(DOMElement, AST.getChild(2)));
+                        result.addAll(parse(DOMElement, AST.getChild(0), newContext));
+                        result.addAll(parse(DOMElement, AST.getChild(2), newContext));
                         break;
                     }
                     case "/": {
@@ -88,7 +96,7 @@ public class XQueryProcessor {
 //                            if (DOMElement.getNodeType() == Node.ELEMENT_NODE) {
                         Set<Node> uniqueNodes = new LinkedHashSet<>(); // Ensuring uniqueness
                         // first, retrieve all the children of the current DOM node satisfying the XQuery
-                        for (Node node : parse(DOMElement, AST.getChild(0)))
+                        for (Node node : parse(DOMElement, AST.getChild(0), newContext))
                             // then, we evaluate rp on each of the above retrieved children
                             uniqueNodes.addAll(XPathProcessor.parse(node, AST.getChild(2)));
 
@@ -101,7 +109,7 @@ public class XQueryProcessor {
                         // Ensuring uniqueness
                         Set<Node> uniqueNodes = new LinkedHashSet<>(XPathProcessor.parse(DOMElement, AST.getChild(2)));
 
-                        for (Node node : parse(DOMElement, AST.getChild(0)))
+                        for (Node node : parse(DOMElement, AST.getChild(0), newContext))
                             // next, we evaluate for DOMElement/descendant/rp
                             for (Node descendant : XPathProcessor.getDescendants((Element) node))
                                 uniqueNodes.addAll(XPathProcessor.parse(descendant, AST.getChild(2)));
@@ -112,7 +120,7 @@ public class XQueryProcessor {
                     default: {
                         // evaluate ( xQuery )
                         if (separator instanceof XQueryParser.XQueryContext)
-                            result.addAll(parse(DOMElement, separator));
+                            result.addAll(parse(DOMElement, separator, newContext));
                         break;
                     }
                 }
@@ -131,14 +139,17 @@ public class XQueryProcessor {
      * @param AST the current position in the AST
      * @return true if the condition holds at DOMElement, otherwise false
      */
-    private static boolean parseCondition(Element DOMElement, ParseTree AST) {
-
+    private static boolean parseCondition(Element DOMElement, ParseTree AST, HashMap<String, List<Node>> context) {
+        HashMap<String, List<Node>> newContext = new HashMap<>();
+        for (Map.Entry<String, List<Node>> entry : context.entrySet()) {
+            newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
         switch (AST.getChildCount()) {
             case 2: {
                 ParseTree child = AST.getChild(1);
                 if (AST.getChild(0).getText().equals("not") && child instanceof XQueryParser.ConditionContext) {
                     // implement not condition case
-                    if (!parseCondition(DOMElement, child))
+                    if (!parseCondition(DOMElement, child, newContext))
                         return true;
                 }
                 break;
@@ -148,8 +159,8 @@ public class XQueryProcessor {
 
                 if (child instanceof XQueryParser.XQueryContext) {
 
-                    List<Node> xq1Nodes = parseXQuery(DOMElement, AST.getChild(0));
-                    List<Node> xq2Nodes = parseXQuery(DOMElement, AST.getChild(2));
+                    List<Node> xq1Nodes = parseXQuery(DOMElement, AST.getChild(0), newContext);
+                    List<Node> xq2Nodes = parseXQuery(DOMElement, AST.getChild(2), newContext);
 
                     switch (AST.getChild(1).getText()) {
                         case "=":
@@ -174,17 +185,17 @@ public class XQueryProcessor {
                 } else if (child instanceof XQueryParser.ConditionContext) {
                     switch (AST.getChild(1).getText()) {
                         case "and":
-                            return parseCondition(DOMElement, AST.getChild(0)) && parseCondition(DOMElement, AST.getChild(2));
+                            return parseCondition(DOMElement, AST.getChild(0), newContext) && parseCondition(DOMElement, AST.getChild(2), newContext);
                         case "or":
-                            return parseCondition(DOMElement, AST.getChild(0)) || parseCondition(DOMElement, AST.getChild(2));
+                            return parseCondition(DOMElement, AST.getChild(0), newContext) || parseCondition(DOMElement, AST.getChild(2), newContext);
                     }
                 } else if (child.getText().equals("empty(")) {
                     ParseTree xq = AST.getChild(1);
                     if (xq instanceof XQueryParser.XQueryContext)
-                        return parseXQuery(DOMElement, child).isEmpty();
+                        return parseXQuery(DOMElement, child, newContext).isEmpty();
                     break;
                 } else if (child.getText().equals("(")) {
-                    return parseCondition(DOMElement, AST.getChild(1));
+                    return parseCondition(DOMElement, AST.getChild(1), newContext);
                 }
                 break;
             }

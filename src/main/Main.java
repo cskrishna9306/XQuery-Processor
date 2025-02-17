@@ -7,10 +7,12 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.HashMap;
 import java.util.List;
 
 import com.example.antlr4.XQueryLexer;
 import com.example.antlr4.XQueryParser;
+
 
 public class Main {
     public static void main(String[] args) {
@@ -30,7 +32,8 @@ public class Main {
             ParseTree AST = parser.eval();
 
             // args[2] - output file
-            List<Node> result = XQueryProcessor.parse(DOMTree.getDocumentElement(), AST);
+            HashMap<String, List<Node>> context = new HashMap<String, List<Node>>();
+            List<Node> result = XQueryProcessor.parse(DOMTree.getDocumentElement(), AST, context);
             XMLToDOMParser.exportToXML(result, args[2]);
         } catch (Exception e) {
             e.printStackTrace();
