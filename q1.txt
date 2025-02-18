@@ -1,1 +1,1 @@
-<RESULT>{doc("j_caesar.xml")/*}</RESULT>
+<RESULT>{"asdsadasd"}</RESULT>

@@ -35,10 +35,11 @@ public class Main {
             // args[2] - output file
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
-            Document resultDoc = builder.newDocument();
+            Document resultDocument = builder.newDocument();
+            XQueryProcessor processor = new XQueryProcessor(DOMTree.getDocumentElement(), resultDocument);
 
-            List<Node> result = XQueryProcessor.parse(resultDoc, DOMTree.getDocumentElement(), AST);
-            XMLToDOMParser.exportToXML(resultDoc, result, args[2]);
+            List<Node> result = processor.parse(AST);
+            XMLToDOMParser.exportToXML(resultDocument, result, args[2]);
         } catch (Exception e) {
             e.printStackTrace();
         }
