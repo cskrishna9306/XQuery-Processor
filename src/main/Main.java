@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.HashMap;
 import java.util.List;
 
 import com.example.antlr4.XQueryLexer;
@@ -38,8 +39,8 @@ public class Main {
             Document resultDocument = builder.newDocument();
             XQueryProcessor processor = new XQueryProcessor(DOMTree.getDocumentElement(), resultDocument);
 
-            List<Node> result = processor.parse(AST);
-            XMLToDOMParser.exportToXML(resultDocument, result, args[2]);
+            List<Node> result = processor.parse(AST, new HashMap<String, List<Node>>());
+            XMLToDOMParser.exportToXML(resultDocument, args[2]);
         } catch (Exception e) {
             e.printStackTrace();
         }

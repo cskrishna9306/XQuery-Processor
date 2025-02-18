@@ -44,7 +44,7 @@ public class XMLToDOMParser {
         return null;
     }
 
-    public static void exportToXML(Document resultDoc, List<Node> result, String fileName) {
+    public static void exportToXML(Document resultDoc, String fileName) {
         try {
             // Create a new Document
 //            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
