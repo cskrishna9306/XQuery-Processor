@@ -176,7 +176,7 @@ public class XQueryProcessor {
                     newContext.put(var.getText().substring(1),
                             parse(xQuery, context));
 
-                    parse()
+                    parse();
 
                 }
 
