@@ -44,22 +44,22 @@ public class XMLToDOMParser {
         return null;
     }
 
-    public static void exportToXML(List<Node> result, String fileName) {
+    public static void exportToXML(Document resultDoc, List<Node> result, String fileName) {
         try {
             // Create a new Document
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document tempDoc = builder.newDocument();
+//            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+//            DocumentBuilder builder = factory.newDocumentBuilder();
+//            Document tempDoc = builder.newDocument();
 
             // Create a root element to wrap nodes (optional)
-            Element root = tempDoc.createElement("RESULT");
-            tempDoc.appendChild(root);
-
-            // Import nodes into the new document and append them
-            for (Node node : result) {
-                Node importedNode = tempDoc.importNode(node, true);
-                root.appendChild(importedNode);
-            }
+//            Element root = resultDoc.createElement("RESULT");
+//            resultDoc.appendChild(root);
+//
+//            // Import nodes into the new document and append them
+//            for (Node node : result) {
+//                Node importedNode = resultDoc.importNode(node, true);
+//                root.appendChild(importedNode);
+//            }
 
             // Serialize the Document to a file
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -67,7 +67,7 @@ public class XMLToDOMParser {
             transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes"); // Pretty print
 
             File outputFile = new File(fileName);
-            transformer.transform(new DOMSource(tempDoc), new StreamResult(outputFile));
+            transformer.transform(new DOMSource(resultDoc), new StreamResult(outputFile));
 
             System.out.println("XML saved to: " + outputFile.getAbsolutePath());
         } catch (Exception e) {

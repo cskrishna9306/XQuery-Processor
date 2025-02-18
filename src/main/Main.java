@@ -12,6 +12,9 @@ import java.util.List;
 import com.example.antlr4.XQueryLexer;
 import com.example.antlr4.XQueryParser;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 public class Main {
     public static void main(String[] args) {
         // Step 1: Read the XPath query
@@ -30,8 +33,12 @@ public class Main {
             ParseTree AST = parser.eval();
 
             // args[2] - output file
-            List<Node> result = XQueryProcessor.parse(DOMTree.getDocumentElement(), AST);
-            XMLToDOMParser.exportToXML(result, args[2]);
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document resultDoc = builder.newDocument();
+
+            List<Node> result = XQueryProcessor.parse(resultDoc, DOMTree.getDocumentElement(), AST);
+            XMLToDOMParser.exportToXML(resultDoc, result, args[2]);
         } catch (Exception e) {
             e.printStackTrace();
         }
