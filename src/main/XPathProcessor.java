@@ -1,3 +1,4 @@
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.w3c.dom.*;
 
 import java.util.*;
@@ -7,6 +8,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 // Custom import packages
 import com.example.antlr4.XQueryParser;
+import com.example.antlr4.XQueryLexer;
 
 public class XPathProcessor {
 
@@ -292,9 +294,9 @@ public class XPathProcessor {
                     ParseTree rp2 = AST.getChild(2);
 
                     switch (AST.getChild(1).getText()) {
-                        case "=":
-                        case "eq": {
-                            if (!(rp2 instanceof XQueryParser.RelativePathContext)) {
+                        case "=": {
+                            // Check to see if we are looking at the case rp = String
+                            if (((TerminalNode) rp2).getSymbol().getType() == XQueryLexer.STRING) {
                                 String string = rp2.getText().substring(1, rp2.getText().length() - 1);
 
                                 for (Node n : parseRelativePath(DOMElement, rp1))
@@ -302,7 +304,8 @@ public class XPathProcessor {
                                         return true;
                                 break;
                             }
-
+                        }
+                        case "eq": {
                             List<Node> rp1Nodes = parseRelativePath(DOMElement, rp1);
                             List<Node> rp2Nodes = parseRelativePath(DOMElement, rp2);
 
