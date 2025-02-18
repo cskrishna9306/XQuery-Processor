@@ -96,16 +96,21 @@ public class XQueryProcessor {
                 ParseTree letClause = AST.getChild(0);
                 ParseTree xQuery = AST.getChild(1);
 
-                // Step 1: Build context with let clause
+                // Step 1: Create a new context as a copy of the original one
+                HashMap<String, List<Node>> newContext = new HashMap<>();
+                // Clone list to prevent modifications
+                for (Map.Entry<String, List<Node>> entry : context.entrySet())
+                    newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+
+                // Step 2: Build new context with let clause
                 // letClause.getChild(i) is the variable name
                 // letClause.getChild(i + 2) is the xQuery
                 for (int i = 1; i < letClause.getChildCount(); i += 4)
-                    context.put(letClause.getChild(i).getText().substring(1),
-                            parse(letClause.getChild(i + 2), context));
+                    newContext.put(letClause.getChild(i).getText().substring(1),
+                            parse(letClause.getChild(i + 2), newContext));
 
-                // Step 2: Evaluate the XQuery following the let clause on the new context
-                result.addAll(parse(xQuery, context));
-
+                // Step 3: Evaluate the XQuery following the let clause on the new context
+                result.addAll(parse(xQuery, newContext));
                 break;
             }
             case 3: {
@@ -120,7 +125,6 @@ public class XQueryProcessor {
                     }
                     case "/": {
                         // recurse only over direct children
-//                            if (DOMElement.getNodeType() == Node.ELEMENT_NODE) {
                         Set<Node> uniqueNodes = new LinkedHashSet<>(); // Ensuring uniqueness
                         // first, retrieve all the children of the current DOM node satisfying the XQuery
                         for (Node node : parse(AST.getChild(0), context))
@@ -128,7 +132,6 @@ public class XQueryProcessor {
                             uniqueNodes.addAll(XPathProcessor.parse(node, AST.getChild(2)));
 
                         result.addAll(uniqueNodes);
-//                            }
                         break;
                     }
                     case "//": {

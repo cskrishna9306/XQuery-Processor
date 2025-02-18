@@ -1,1 +1,1 @@
-<RESULT>{"asdsadasd"}</RESULT>
+<RESULT>{<RESULT2>{let $var := doc("j_caesar.xml")/*, $d := $var//SPEAKER $d}</RESULT2>}</RESULT>
