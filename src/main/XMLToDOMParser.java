@@ -1,6 +1,4 @@
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -9,7 +7,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
-import java.util.List;
 
 public class XMLToDOMParser {
 
@@ -46,21 +43,6 @@ public class XMLToDOMParser {
 
     public static void exportToXML(Document resultDoc, String fileName) {
         try {
-            // Create a new Document
-//            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-//            DocumentBuilder builder = factory.newDocumentBuilder();
-//            Document tempDoc = builder.newDocument();
-
-            // Create a root element to wrap nodes (optional)
-//            Element root = resultDoc.createElement("RESULT");
-//            resultDoc.appendChild(root);
-//
-//            // Import nodes into the new document and append them
-//            for (Node node : result) {
-//                Node importedNode = resultDoc.importNode(node, true);
-//                root.appendChild(importedNode);
-//            }
-
             // Serialize the Document to a file
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
