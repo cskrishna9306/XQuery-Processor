@@ -161,13 +161,26 @@ public class XQueryProcessor {
                 ParseTree whereClause = AST.getChild(1);
                 ParseTree returnClause = AST.getChild(2);
 
-                // Step 0: Create a new context as a copy of the original one
-                HashMap<String, List<Node>> newContext = new HashMap<>();
-                // Clone list to prevent modifications
-                for (Map.Entry<String, List<Node>> entry : context.entrySet())
-                    newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+
 
                 // Step 1: Evaluate the for clause
+                for (int i = 1; i < forClause.getChildCount() - 2; i += 4) {
+                    // Create a new context as a copy of the original one
+                    HashMap<String, List<Node>> newContext = new HashMap<>();
+                    // Clone list to prevent modifications
+                    for (Map.Entry<String, List<Node>> entry : context.entrySet())
+                        newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+
+                    ParseTree var = forClause.getChild(i);
+                    ParseTree xQuery = forClause.getChild(i + 2);
+                    newContext.put(var.getText().substring(1),
+                            parse(xQuery, context));
+
+                    parse()
+
+                }
+
+
 
                 // Step 2: Evaluate the let clause (Optional)
 
