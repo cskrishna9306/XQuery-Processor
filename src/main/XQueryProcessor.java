@@ -65,11 +65,6 @@ public class XQueryProcessor {
 
     /**
      * This function evaluates the XQuery expression from the root of the DOM tree.
-     * The function performs 2 operations:
-     *  i. Dynamically generates the DOM tree of the input XML file
-     *  ii. Evaluates the XPath query over the generated DOM tree
-     *
-     * Do we need a parameter reference to DOMElement, and AST for XQuery because we will only be calling XPathProcessor.parse() from the root element always?
      *
      * @param AST the current position in the AST
      * @return the list of nodes satisfying the XPath query
@@ -160,6 +155,29 @@ public class XQueryProcessor {
                 result.add(makeElement(AST.getChild(1).getText(), parse(AST.getChild(4), context)));
                 break;
             }
+            default: {
+                // Evaluate FLWR expression
+                ParseTree forClause = AST.getChild(0);
+                ParseTree whereClause = AST.getChild(1);
+                ParseTree returnClause = AST.getChild(2);
+
+                // Step 0: Create a new context as a copy of the original one
+                HashMap<String, List<Node>> newContext = new HashMap<>();
+                // Clone list to prevent modifications
+                for (Map.Entry<String, List<Node>> entry : context.entrySet())
+                    newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+
+                // Step 1: Evaluate the for clause
+
+                // Step 2: Evaluate the let clause (Optional)
+
+                // Step 3: Evaluate the where clause
+                if (parseCondition(whereClause.getChild(1), newContext))
+                    // Step 4: Evaluate return clause
+                    result.addAll(parse(returnClause.getChild(1), newContext));
+
+                break;
+            }
         }
 
         return result;
@@ -229,6 +247,25 @@ public class XQueryProcessor {
                 break;
             }
             default: {
+                // Evaluate the "some VAR in XQuery satisfies condition" rule
+
+                // Step 1: Create a new context as a copy of the original one
+                HashMap<String, List<Node>> newContext = new HashMap<>();
+                // Clone list to prevent modifications
+                for (Map.Entry<String, List<Node>> entry : context.entrySet())
+                    newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+
+                // Step 2: Build new context with some clause
+                // letClause.getChild(i) is the variable name
+                // letClause.getChild(i + 2) is the xQuery
+                for (int i = 1; i < AST.getChildCount() - 2; i += 4)
+                    newContext.put(AST.getChild(i).getText().substring(1),
+                            parse(AST.getChild(i + 2), newContext));
+
+                // Step 3: Evaluate the new context against the specified condition
+                if (parseCondition(AST.getChild(AST.getChildCount() - 1), newContext))
+                    return true;
+
                 break;
             }
         }
