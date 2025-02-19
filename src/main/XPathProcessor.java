@@ -90,8 +90,9 @@ public class XPathProcessor {
             return parseAbsolutePath((Element) DOMElement, AST);
 
         // evaluate relative path expression
-        if (AST instanceof XQueryParser.RelativePathContext)
+        if (AST instanceof XQueryParser.RelativePathContext) {
             return parseRelativePath(DOMElement, AST);
+        }
 
         return null;
     }
