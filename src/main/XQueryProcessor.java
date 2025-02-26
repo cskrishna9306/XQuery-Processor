@@ -41,6 +41,120 @@ public class XQueryProcessor {
         return this.resultDocument.createTextNode(s);
     }
 
+    private List<Node> searchFor(ParseTree forClause, ParseTree letClause, ParseTree whereClause, ParseTree returnClause, HashMap<String, List<Node>> context, int i) {
+        // Base case: end $var in xQuery, evaluate the FLWR expression at leaf
+        System.out.println("-------------NEW LEVEL-------------");
+        System.out.println("search: " + i + " text: " + forClause.getChild(i));
+        if (i >= forClause.getChildCount() - 2) {
+            System.out.println("LEAF: " + i + " text: " + forClause.getChild(i - 4));
+            return evalFor(context, letClause, whereClause, returnClause);
+        }
+
+        List<Node> result = new ArrayList<>();
+        ParseTree var = forClause.getChild(i);
+        ParseTree xQuery = forClause.getChild(i + 2);
+        System.out.println("var: " + var.getText() + " xQuery: " + xQuery.getText());
+        // Create a new context as a copy of the original one
+        HashMap<String, List<Node>> newContext = new HashMap<>();
+        // Clone list to prevent modifications
+        for (Map.Entry<String, List<Node>> entry : context.entrySet())
+            newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        String key = var.getText().substring(1);
+        List<Node> values = parse(xQuery, context);
+        System.out.println("values: " + values + " context: " + context);
+        for (Node value : values) {
+            List<Node> valueList =  new ArrayList<>(Collections.singletonList(value));
+            newContext.put(key, valueList);
+            System.out.println("next lvl: " + i + " text: " + forClause.getChild(i + 4).getText());
+            // Goes to next layer of $var in xQuery
+            result.addAll(searchFor(forClause, letClause, whereClause, returnClause, newContext, i + 4));
+        }
+        newContext.put(var.getText().substring(1),
+                parse(xQuery, context));
+        return result;
+    }
+
+    private List<Node> evalFor(HashMap<String, List<Node>> context, ParseTree letClause, ParseTree whereClause, ParseTree returnClause){
+        // Evaluate FOR expression
+        // Create a new context as a copy of the original one
+        HashMap<String, List<Node>> newContext = new HashMap<>();
+        // Clone list to prevent modifications
+        for (Map.Entry<String, List<Node>> entry : context.entrySet())
+            newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        List<Node> result = new ArrayList<>();
+        // Step 2: Evaluate the let clause (Optional)
+        if (letClause != null) {
+            for (int j = 1; j < letClause.getChildCount(); j += 4) {
+                String key = letClause.getChild(j).getText().substring(1);
+                List<Node> value =  parse(letClause.getChild(j + 2), newContext);
+                System.out.println("Adding Context: " + letClause.getChild(j).getText().substring(1) + " value: " + value);
+                newContext.put(key, value);
+            }
+        }
+
+        // Step 3: Evaluate the where clause
+        boolean conditionFlag = true;
+        if (whereClause != null) {
+            conditionFlag = parseCondition(whereClause.getChild(1), newContext);
+        }
+        // Step 4: Evaluate return clause
+        if (conditionFlag) {
+            result.addAll(parse(returnClause.getChild(1), newContext));
+        }
+        return result;
+    }
+
+    private List<Node> evalFLWR(ParseTree AST, HashMap<String, List<Node>> context){
+        // Evaluate FLWR expression
+        System.out.println("FLWR expression");
+        List<Node> result = new ArrayList<>();
+        ParseTree forClause = AST.getChild(0);;
+        ParseTree letClause = null;
+        ParseTree whereClause = null;
+        ParseTree returnClause = null;
+        if (AST.getChildCount() == 2) {
+            returnClause = AST.getChild(1);
+        } else if (AST.getChildCount() == 3) {
+            if (AST.getChild(1) instanceof XQueryParser.LetClauseContext) {
+                letClause = AST.getChild(1);
+            } else {
+                whereClause = AST.getChild(1);
+            }
+            returnClause = AST.getChild(2);
+        } else if (AST.getChildCount() == 4) {
+            letClause = AST.getChild(1);
+            whereClause = AST.getChild(2);
+            returnClause = AST.getChild(3);
+        };
+
+        if (forClause != null) {
+            System.out.print("forClause: " + forClause.getText() + " ");
+        }
+        if (letClause != null) {
+            System.out.print("letClause: " + letClause.getText() + " ");
+        }
+        if (whereClause != null) {
+            System.out.print("whereClause: " + whereClause.getText() + " ");
+        }
+        if (returnClause != null) {
+            System.out.print("returnClause: " + returnClause.getText());
+        }
+
+        result.addAll(searchFor(forClause, letClause, whereClause, returnClause,context, 1));
+
+//        // Step 1: Evaluate the for clause
+//        for (int i = 1; i < forClause.getChildCount() - 2; i += 4) {
+//
+//
+//
+//
+//
+////            result.addAll(evalFor(AST, context, letClause, whereClause, returnClause));
+//
+//        }
+        return result;
+    }
+
     /**
      * Entry point function to parse and evaluate all XQuery expressions.
      * This function takes a starting DOM node, and Abstract Syntax Tree (AST) as parameters.
@@ -73,14 +187,22 @@ public class XQueryProcessor {
 
         // list containing the final result
         List<Node> result = new ArrayList<>();
-
+        System.out.println("AT: " + AST.getText() + " count: " + AST.getChildCount());
+        if (AST.getChild(0) instanceof XQueryParser.ForClauseContext){
+            result.addAll(evalFLWR(AST, context));
+        }
         switch (AST.getChildCount()) {
             case 1: {
                 ParseTree child = AST.getChild(0);
-
                 if (child instanceof TerminalNode) {
-                    if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.VAR)
-                        result.addAll(context.get(child.getText().substring(1)));
+                    if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.VAR) {
+                        String key = child.getText().substring(1);
+                        List<Node> value = context.get(key);
+                        System.out.println("key: " + key + "found value: " + value);
+                        if (value != null) {
+                            result.addAll(value);
+                        }
+                    }
                     else if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.STRING)
                         result.add(makeText(child.getText().substring(1, child.getText().length() - 1)));
                 } else if (child instanceof XQueryParser.AbsolutePathContext)
@@ -133,12 +255,19 @@ public class XQueryProcessor {
                         // first, include all DOMElement/rp cases
                         // Ensuring uniqueness
                         Set<Node> uniqueNodes = new LinkedHashSet<>(XPathProcessor.parse(DOMElement, AST.getChild(2)));
-
-                        for (Node node : parse(AST.getChild(0), context))
+                        for (Node node : parse(AST.getChild(0), context)) {
+                            System.out.println("//: " + " left: " + node + " right: " + AST.getChild(2).getText());
+//                            System.out.println("//desc: " + XPathProcessor.getDescendants((Element) node));
                             // next, we evaluate for DOMElement/descendant/rp
-                            for (Node descendant : XPathProcessor.getDescendants((Element) node))
+                            for (Node descendant : XPathProcessor.getDescendants((Element) node)) {
                                 uniqueNodes.addAll(XPathProcessor.parse(descendant, AST.getChild(2)));
-
+                                if (descendant.getNodeName().equals("SCENE")) {
+                                    System.out.println("//desc found: " + XPathProcessor.parse(descendant, AST.getChild(2)));
+                                    System.out.println("//desc: " + uniqueNodes);
+                                }
+                            }
+                        }
+                        System.out.println("// found: " + uniqueNodes);
                         result.addAll(uniqueNodes);
                         break;
                     }
@@ -156,43 +285,9 @@ public class XQueryProcessor {
                 break;
             }
             default: {
-                // Evaluate FLWR expression
-                ParseTree forClause = AST.getChild(0);
-                ParseTree whereClause = AST.getChild(1);
-                ParseTree returnClause = AST.getChild(2);
-
-
-
-                // Step 1: Evaluate the for clause
-                for (int i = 1; i < forClause.getChildCount() - 2; i += 4) {
-                    // Create a new context as a copy of the original one
-                    HashMap<String, List<Node>> newContext = new HashMap<>();
-                    // Clone list to prevent modifications
-                    for (Map.Entry<String, List<Node>> entry : context.entrySet())
-                        newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
-
-                    ParseTree var = forClause.getChild(i);
-                    ParseTree xQuery = forClause.getChild(i + 2);
-                    newContext.put(var.getText().substring(1),
-                            parse(xQuery, context));
-
-                    parse();
-
-                }
-
-
-
-                // Step 2: Evaluate the let clause (Optional)
-
-                // Step 3: Evaluate the where clause
-                if (parseCondition(whereClause.getChild(1), newContext))
-                    // Step 4: Evaluate return clause
-                    result.addAll(parse(returnClause.getChild(1), newContext));
-
                 break;
             }
         }
-
         return result;
     }
 
