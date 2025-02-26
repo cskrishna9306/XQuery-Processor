@@ -10,7 +10,7 @@ javac -cp .:lib/*:main main/XPathProcessor.java
 #javac -cp lib/antlr-4.13.1-complete.jar:lib/*:main:main/antlr -d . main/*.java
 javac -cp .:lib/*:main:main/antlr main/Main.java
 #java -cp .:lib/* main.Main
-java -cp .:lib/*:lib main.Main ./main/j\_caesar.xml ./main/q1.txt result.xml
+java -cp .:lib/*:lib main.Main ./main/j\_caesar.xml ./milestone1/q6.txt result.xml
 
 
 #javac -cp lib/* ./main/Main.java

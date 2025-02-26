@@ -51,10 +51,6 @@ public class XMLToDOMParser {
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document tempDoc = builder.newDocument();
 
-            // Create a root element to wrap nodes (optional)
-            Element root = tempDoc.createElement("RESULT");
-            tempDoc.appendChild(root);
-
             // Import nodes into the new document and append them
             for (Node node : result) {
                 Node importedNode = tempDoc.importNode(node, true);

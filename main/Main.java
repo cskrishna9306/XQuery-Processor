@@ -40,7 +40,9 @@ public class Main {
                     ParseTree AST = parser.eval();
                     XPathProcessor xpp = new XPathProcessor(inputXMLPath);
                     List<Node> result = xpp.parse(null, AST);
-                    XMLToDOMParser.exportToXML(result, outputFilename);
+                    Document DOMTree = XMLToDOMParser.parse(inputXMLPath);
+                    Node root = DOMTree.getDocumentElement();
+                    XMLToDOMParser.exportToXML(result, outputFilename, root);
                 }
             } catch (IOException e) {
                 e.printStackTrace();

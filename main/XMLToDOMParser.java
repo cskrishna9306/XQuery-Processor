@@ -45,7 +45,7 @@ public class XMLToDOMParser {
         return null;
     }
 
-    public static void exportToXML(List<Node> result, String fileName) {
+    public static void exportToXML(List<Node> result, String fileName, Node root) {
         try {
             // Create a new Document
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -53,14 +53,23 @@ public class XMLToDOMParser {
             Document tempDoc = builder.newDocument();
 
             // Create a root element to wrap nodes (optional)
-            Element root = tempDoc.createElement("RESULT");
-            tempDoc.appendChild(root);
+//            Element root;
+//            System.out.println("result size: " + result.size());
+//            if (result.size() > 1) {
+//              root = tempDoc.createElement("RESULT");
+//              tempDoc.appendChild(root);
+//                // Import nodes into the new document and append them
+//                for (Node node : result) {
+//                    System.out.println("node: " + node.getNodeName());
+//                    Node importedNode = tempDoc.importNode(node, true);
+//                    root.appendChild(importedNode);
+//                }
+//            } else {
+//                root = (Element) result.get(0);
+                tempDoc.appendChild(root);
+//            }
 
-            // Import nodes into the new document and append them
-            for (Node node : result) {
-                Node importedNode = tempDoc.importNode(node, true);
-                root.appendChild(importedNode);
-            }
+
 
             // Serialize the Document to a file
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
