@@ -5,7 +5,7 @@
 #java -cp lib/antlr-4.13.1-complete.jar:target/main XPathProcessor "doc(\"j_caesar.xml\")//SCENE"
 
 #OLDDDDD
-#java -cp lib/antlr-4.13.1-complete.jar org.antlr.v4.Tool -package main.antlr -o . main/antlr/XPath.g4
+java -cp lib/antlr-4.13.1-complete.jar org.antlr.v4.Tool -package main.antlr -o . main/antlr/XQuery.g4
 #javac -cp lib/antlr-4.13.1-complete.jar ./main/XMLToDOMParser.java
 #javac -cp .:lib/*:main main/XPathProcessor.java
 ##javac -cp lib/antlr-4.13.1-complete.jar:lib/*:main:main/antlr -d . main/*.java

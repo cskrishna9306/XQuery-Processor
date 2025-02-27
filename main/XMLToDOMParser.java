@@ -1,7 +1,5 @@
 package main;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -10,7 +8,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
-import java.util.List;
 
 public class XMLToDOMParser {
 
@@ -45,72 +42,15 @@ public class XMLToDOMParser {
         return null;
     }
 
-    public static void exportToXML(List<Node> result, String fileName) {
+    public static void exportToXML(Document resultDoc, String fileName) {
         try {
-            // Create a new Document
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document tempDoc = builder.newDocument();
-
-            // Create a root element to wrap nodes (optional)
-//            Element root;
-//            System.out.println("result size: " + result.size());
-//            if (result.size() > 1) {
-//              root = tempDoc.createElement("RESULT");
-//              tempDoc.appendChild(root);
-//                // Import nodes into the new document and append them
-//                for (Node node : result) {
-//                    System.out.println("node: " + node.getNodeName());
-//                    Node importedNode = tempDoc.importNode(node, true);
-//                    root.appendChild(importedNode);
-//                }
-//            } else {
-//                root = (Element) result.get(0);
-
-//            }
-
-//            Element root = tempDoc.createElement("RESULT");
-//            tempDoc.appendChild(root);
-//
-//            // Import nodes into the new document and append them
-//            for (Node node : result) {
-//                Node importedNode = tempDoc.importNode(node, true);
-//                root.appendChild(importedNode);
-//            }
-
-
-//            Element newRoot = tempDoc.createElement("RESULT");
-////            Element newRoot = tempDoc.createElement(root.getNodeName());
-//            tempDoc.appendChild(newRoot);
-////          Import nodes into the new document and append them
-//            for (Node node : result) {
-//                System.out.println("node: " + node.getNodeName());
-//                Node importedNode = tempDoc.importNode(node, true);
-//                root.appendChild(importedNode);
-//            }
-
-
-            // Create a root element to wrap nodes (optional)
-            Element root = tempDoc.createElement("RESULT");
-            tempDoc.appendChild(root);
-
-            // Import nodes into the new document and append them
-            for (Node node : result) {
-                Node importedNode = tempDoc.importNode(node, true);
-                root.appendChild(importedNode);
-            }
-
-
-
-
             // Serialize the Document to a file
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes"); // Pretty print
-            transformer.setOutputProperty(javax.xml.transform.OutputKeys.OMIT_XML_DECLARATION, "yes"); // Omit XML declaration
 
             File outputFile = new File(fileName);
-            transformer.transform(new DOMSource(tempDoc), new StreamResult(outputFile));
+            transformer.transform(new DOMSource(resultDoc), new StreamResult(outputFile));
 
             System.out.println("XML saved to: " + outputFile.getAbsolutePath());
         } catch (Exception e) {
