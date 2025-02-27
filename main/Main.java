@@ -42,7 +42,7 @@ public class Main {
                     List<Node> result = xpp.parse(null, AST);
                     Document DOMTree = XMLToDOMParser.parse(inputXMLPath);
                     Node root = DOMTree.getDocumentElement();
-                    XMLToDOMParser.exportToXML(result, outputFilename, root);
+                    XMLToDOMParser.exportToXML(result, outputFilename);
                 }
             } catch (IOException e) {
                 e.printStackTrace();

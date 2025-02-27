@@ -1,16 +1,27 @@
+#!/bin/bash
 #mvn clean compile
 #javac -cp lib/antlr-4.13.1-complete.jar:target/main -d target/main src/main/XPathProcessor.java
 #javac -cp lib/antlr-4.13.1-complete.jar:target/main -d target/main src/main/Main.java
 #java -cp lib/antlr-4.13.1-complete.jar:target/main XPathProcessor "doc(\"j_caesar.xml\")//SCENE"
 
+#OLDDDDD
+#java -cp lib/antlr-4.13.1-complete.jar org.antlr.v4.Tool -package main.antlr -o . main/antlr/XPath.g4
+#javac -cp lib/antlr-4.13.1-complete.jar ./main/XMLToDOMParser.java
+#javac -cp .:lib/*:main main/XPathProcessor.java
+##javac -cp lib/antlr-4.13.1-complete.jar:lib/*:main:main/antlr -d . main/*.java
+#javac -cp .:lib/*:main:main/antlr main/Main.java
+##java -cp .:lib/* main.Main
+##ORIGINAL
+#java -cp .:lib/*:lib main.Main ./main/data/j\_caesar.xml ./milestone1/q6.txt result.xml
+##NEXT
+##java -cp "classes:lib/*" main.Main data/j_caesar.xml data/query/q$i.txt data/result/q$i.xml
 
-java -cp lib/antlr-4.13.1-complete.jar org.antlr.v4.Tool -package main.antlr -o . main/antlr/XPath.g4
-javac -cp lib/antlr-4.13.1-complete.jar ./main/XMLToDOMParser.java
-javac -cp .:lib/*:main main/XPathProcessor.java
-#javac -cp lib/antlr-4.13.1-complete.jar:lib/*:main:main/antlr -d . main/*.java
-javac -cp .:lib/*:main:main/antlr main/Main.java
-#java -cp .:lib/* main.Main
-java -cp .:lib/*:lib main.Main ./main/j\_caesar.xml ./milestone1/q6.txt result.xml
+
+#autograde
+javac -cp "lib/*" -d classes main/*.java main/antlr/*.java
+java_files=$(find main -name "*.java")
+javac -cp lib/* -d classes $java_files
+java -cp "classes:lib/*" main.Main ./main/data/j_caesar.xml ./milestone1/q6.txt q6.xml
 
 
 #javac -cp lib/* ./main/Main.java
