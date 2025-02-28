@@ -43,7 +43,6 @@ public class XQueryProcessor {
     }
 
     private List<Node> searchFor(ParseTree forClause, ParseTree letClause, ParseTree whereClause, ParseTree returnClause, HashMap<String, List<Node>> context, int i) {
-
         // Base case: end $var in xQuery, evaluate the FLWR expression at leaf
         if (i >= forClause.getChildCount() - 2)
             return evalFor(context, letClause, whereClause, returnClause);
@@ -61,7 +60,8 @@ public class XQueryProcessor {
             newContext.put(entry.getKey(), new ArrayList<>(entry.getValue()));
 
         String key = var.getText().substring(1);
-        for (Node value : parse(xQuery, newContext)) {
+        List<Node> list = parse(xQuery, context);
+        for (Node value : list) {
             List<Node> valueList =  new ArrayList<>(Collections.singletonList(value));
             newContext.put(key, valueList);
             // Recursively traverses to next layer of $var in xQuery
@@ -97,17 +97,17 @@ public class XQueryProcessor {
                 newContext.put(letClause.getChild(i).getText().substring(1),
                         parse(letClause.getChild(i + 2), newContext));
         }
-
         // Check to see if the where clause exists
         if (whereClause.getChildCount() != 0) {
             // Step 3: Evaluate the where clause
-            if (parseCondition(whereClause.getChild(1), newContext))
+            if (parseCondition(whereClause.getChild(1), newContext)) {
                 // Step 4: Evaluate return clause
-                result.addAll(parse(returnClause.getChild(1), newContext));
+                List<Node> parseRes = parse(returnClause.getChild(1), newContext);
+                result.addAll(parseRes);
+            }
         } else
             // Step 4: Evaluate return clause
             result.addAll(parse(returnClause.getChild(1), newContext));
-
         return result;
     }
 
@@ -130,7 +130,7 @@ public class XQueryProcessor {
         if (AST instanceof XQueryParser.XQueryContext)
             return parseXQuery(AST, context);
 
-        return null;
+        return new ArrayList<Node>();
     }
 
     /**
@@ -140,7 +140,6 @@ public class XQueryProcessor {
      * @return the list of nodes satisfying the XPath query
      */
     private List<Node> parseXQuery(ParseTree AST, HashMap<String, List<Node>> context) {
-
         // list containing the final result
         List<Node> result = new ArrayList<>();
 
@@ -208,20 +207,15 @@ public class XQueryProcessor {
                         // Ensuring uniqueness
                         Set<Node> uniqueNodes = new LinkedHashSet<>(XPathProcessor.parse(DOMElement, AST.getChild(2)));
                         for (Node node : parse(AST.getChild(0), context)) {
-//                            System.out.println("//: " + " left: " + node + " right: " + AST.getChild(2).getText());
-//                            System.out.println("//desc: " + XPathProcessor.getDescendants((Element) node));
                             // next, we evaluate for DOMElement/descendant/rp
-                            for (Node descendant : XPathProcessor.getDescendants((Element) node)) {
-//                                List<Node> t = XPathProcessor.parse(descendant, AST.getChild(2));
-//                                System.out.println(t);
-                                uniqueNodes.addAll(XPathProcessor.parse(descendant, AST.getChild(2)));
-//                                if (descendant.getNodeName().equals("SCENE")) {
-//                                    System.out.println("//desc found: " + XPathProcessor.parse(descendant, AST.getChild(2)));
-//                                    System.out.println("//desc: " + uniqueNodes);
-//                                }
+                            List<Node> descendants = XPathProcessor.getDescendants((Element) node);
+                            List<Node> foundMatchingDirectDescendents = XPathProcessor.parse(node, AST.getChild(2));
+                            uniqueNodes.addAll(foundMatchingDirectDescendents);
+                            for (Node descendant : descendants) {
+                                    List<Node> foundMatchingDescendents = XPathProcessor.parse(descendant, AST.getChild(2));
+                                    uniqueNodes.addAll(foundMatchingDescendents);
                             }
                         }
-//                        System.out.println("// found: " + uniqueNodes);
                         result.addAll(uniqueNodes);
                         break;
                     }
@@ -240,7 +234,6 @@ public class XQueryProcessor {
                 ParseTree letClause = AST.getChild(1);
                 ParseTree whereClause = AST.getChild(2);
                 ParseTree returnClause = AST.getChild(3);
-
                 result.addAll(searchFor(forClause, letClause, whereClause, returnClause,context, 1));
 
                 break;
@@ -260,7 +253,6 @@ public class XQueryProcessor {
      * @return true if the condition holds at DOMElement, otherwise false
      */
     private boolean parseCondition(ParseTree AST, HashMap<String, List<Node>> context) {
-
         switch (AST.getChildCount()) {
             case 2: {
                 ParseTree child = AST.getChild(1);
@@ -308,8 +300,10 @@ public class XQueryProcessor {
                     }
                 } else if (child.getText().equals("empty(")) {
                     ParseTree xq = AST.getChild(1);
-                    if (xq instanceof XQueryParser.XQueryContext)
-                        return parse(child, context).isEmpty();
+                    if (xq instanceof XQueryParser.XQueryContext) {
+                        List<Node> parseResult = parse(xq, context);
+                        return parseResult.isEmpty();
+                    }
                     break;
                 } else if (child.getText().equals("(")) {
                     return parseCondition(AST.getChild(1), context);

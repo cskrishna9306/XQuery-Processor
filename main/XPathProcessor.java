@@ -93,7 +93,7 @@ public class XPathProcessor {
         // evaluate relative path expression
         if (AST instanceof XQueryParser.RelativePathContext)
             return parseRelativePath(DOMElement, AST);
-
+        System.out.println("Error: Invalid AST node type");
         return null;
     }
 
@@ -144,7 +144,6 @@ public class XPathProcessor {
 
         // list containing the final result
         List<Node> result = new ArrayList<>();
-
         // differentiate relative path cases by # of children in this AST node
         switch (AST.getChildCount()) {
             case 1: {
