@@ -62,8 +62,8 @@ condition
 
 // Parser rules for absolute path
 absolutePath
-  : 'doc(' STRING ')' '/' relativePath
-  | 'doc(' STRING ')' '//' relativePath
+  : ('document(' | 'doc(') STRING ')' '/' relativePath
+  | ('document(' | 'doc(') STRING ')' '//' relativePath
   ;
 
 // Parser rules for relative path
