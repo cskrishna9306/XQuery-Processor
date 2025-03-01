@@ -250,7 +250,7 @@ public class XQueryProcessor {
                 ParseTree whereClause = AST.getChild(2);
                 ParseTree returnClause = AST.getChild(3);
 
-                result.addAll(searchFor(forClause, letClause, whereClause, returnClause,context, 1));
+                result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
                 break;
             }
             case 9: {
