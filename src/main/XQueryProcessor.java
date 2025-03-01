@@ -15,16 +15,31 @@ public class XQueryProcessor {
     private final Node DOMElement;
     private final Document resultDocument;
 
+    /**
+     * Constructor for the XQuery Processor class.
+     *
+     * @param DOMElement the root element of the DOM tree
+     * @param resultDocument the document object for the resulting XML
+     */
     public XQueryProcessor(Node DOMElement, Document resultDocument) {
         this.DOMElement = DOMElement;
         this.resultDocument = resultDocument;
     }
 
+    /**
+     * This function makes the element node with the provided parameters.
+     *
+     * @param tagName the tag name for the node being created
+     * @param children the children of this element
+     * @return the created element node with the provided tag name and children
+     */
     private Element makeElement(String tagName, List<Node> children) {
 
+        // clear the document of its root if it exists (reset)
         if (this.resultDocument.getDocumentElement() != null)
             this.resultDocument.removeChild(this.resultDocument.getDocumentElement());
 
+        // create the new root element
         Element element = this.resultDocument.createElement(tagName);
         this.resultDocument.appendChild(element);
 
@@ -37,6 +52,12 @@ public class XQueryProcessor {
         return element;
     }
 
+    /**
+     * This element creates and returns a text node.
+     *
+     * @param s the string of the text node
+     * @return the text node
+     */
     private Text makeText(String s) {
         return this.resultDocument.createTextNode(s);
     }
@@ -90,9 +111,6 @@ public class XQueryProcessor {
         if (letClause.getChildCount() != 0) {
             // Step 2: Evaluate the let clause
             for (int i = 1; i < letClause.getChildCount(); i += 4)
-//                String key = letClause.getChild(i).getText().substring(1);
-//                List<Node> value =  parse(letClause.getChild(i + 2), newContext);
-//                newContext.put(key, value);
                 newContext.put(letClause.getChild(i).getText().substring(1),
                         parse(letClause.getChild(i + 2), newContext));
         }
@@ -129,7 +147,7 @@ public class XQueryProcessor {
         if (AST instanceof XQueryParser.XQueryContext)
             return parseXQuery(AST, context);
 
-        return null;
+        return new ArrayList<>();
     }
 
     /**
@@ -203,24 +221,16 @@ public class XQueryProcessor {
                         break;
                     }
                     case "//": {
-                        // first, include all DOMElement/rp cases
                         // Ensuring uniqueness
                         Set<Node> uniqueNodes = new LinkedHashSet<>(XPathProcessor.parse(DOMElement, AST.getChild(2)));
                         for (Node node : parse(AST.getChild(0), context)) {
-//                            System.out.println("//: " + " left: " + node + " right: " + AST.getChild(2).getText());
-//                            System.out.println("//desc: " + XPathProcessor.getDescendants((Element) node));
+                            // first, include all DOMElement/rp cases
+                            uniqueNodes.addAll(XPathProcessor.parse(node, AST.getChild(2)));
                             // next, we evaluate for DOMElement/descendant/rp
-                            for (Node descendant : XPathProcessor.getDescendants((Element) node)) {
-//                                List<Node> t = XPathProcessor.parse(descendant, AST.getChild(2));
-//                                System.out.println(t);
+                            for (Node descendant : XPathProcessor.getDescendants((Element) node))
                                 uniqueNodes.addAll(XPathProcessor.parse(descendant, AST.getChild(2)));
-//                                if (descendant.getNodeName().equals("SCENE")) {
-//                                    System.out.println("//desc found: " + XPathProcessor.parse(descendant, AST.getChild(2)));
-//                                    System.out.println("//desc: " + uniqueNodes);
-//                                }
-                            }
                         }
-//                        System.out.println("// found: " + uniqueNodes);
+
                         result.addAll(uniqueNodes);
                         break;
                     }
@@ -241,7 +251,6 @@ public class XQueryProcessor {
                 ParseTree returnClause = AST.getChild(3);
 
                 result.addAll(searchFor(forClause, letClause, whereClause, returnClause,context, 1));
-
                 break;
             }
             case 9: {
@@ -306,9 +315,9 @@ public class XQueryProcessor {
                             return parseCondition(AST.getChild(0), context) || parseCondition(AST.getChild(2), context);
                     }
                 } else if (child.getText().equals("empty(")) {
-                    ParseTree xq = AST.getChild(1);
-                    if (xq instanceof XQueryParser.XQueryContext)
-                        return parse(child, context).isEmpty();
+                    ParseTree xQuery = AST.getChild(1);
+                    if (xQuery instanceof XQueryParser.XQueryContext)
+                        return parse(xQuery, context).isEmpty();
                     break;
                 } else if (child.getText().equals("(")) {
                     return parseCondition(AST.getChild(1), context);
@@ -341,5 +350,4 @@ public class XQueryProcessor {
 
         return false;
     }
-
 }
