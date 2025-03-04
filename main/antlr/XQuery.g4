@@ -17,11 +17,17 @@ xQuery
     | '<' TAGNAME '>' '{' xQuery '}' '</' TAGNAME '>'
     | forClause letClauseWithEmpty whereClause returnClause
     | letClause xQuery
+    | joinClause
     ;
 
 // Parser rules for the for clause
 forClause
     : 'for' VAR 'in' xQuery (',' VAR 'in' xQuery)*
+    ;
+
+// Parser rules for join clause
+joinClause
+    : 'join (' xQuery ',' xQuery+ ',' ATTRLIST ',' ATTRLIST+ ')'
     ;
 
 // Parser rules for let clause w/o the empty clause
@@ -97,6 +103,7 @@ filter
 
 // Lexer rules
 VAR: '$' LETTER (LETTER | DIGIT | '_')* ;
+ATTRLIST: '[' LETTER (LETTER | DIGIT) ']' ;
 TAGNAME: LETTER (LETTER | DIGIT)* ;
 ATTRIBUTENAME: LETTER (LETTER | DIGIT | '_' | '-')* ;
 //FILENAME: STRING;
