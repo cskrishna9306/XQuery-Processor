@@ -21,7 +21,7 @@ java -cp lib/antlr-4.13.1-complete.jar org.antlr.v4.Tool -package main.antlr -o 
 javac -cp "lib/*" -d classes main/*.java main/antlr/*.java
 java_files=$(find main -name "*.java")
 javac -cp lib/* -d classes $java_files
-java -cp "classes:lib/*" main.Main ./main/data/j_caesar.xml ./milestone2/q7.txt q7.xml
+java -cp "classes:lib/*" main.Main ./main/data/j_caesar.xml ./milestone3/test1.txt test1.xml
 
 
 #javac -cp lib/* ./main/Main.java

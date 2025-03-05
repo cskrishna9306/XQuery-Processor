@@ -111,6 +111,59 @@ public class XQueryProcessor {
         return result;
     }
 
+    private List<Node> parseJoin(ParseTree joinClause, HashMap<String, List<Node>> context) {
+        List<Node> result = new ArrayList<>();
+        List<Node> tupleList1 = parse(joinClause.getChild(1), context);
+        List<Node> tupleList2 = parse(joinClause.getChild(3), context);
+        List<String> attrList1 = new ArrayList<>();
+        List<String> attrList2 = new ArrayList<>();
+        for (int i = 0; i < joinClause.getChild(5).getChildCount(); i++ ) {
+            attrList1.add(joinClause.getChild(5).getChild(i).getText());
+        }
+        for (int i = 0; i < joinClause.getChild(7).getChildCount(); i++ ){
+            attrList2.add(joinClause.getChild(7).getChild(i).getText());
+        }
+        if (attrList1.size() != attrList2.size()) {
+            System.out.println("Attributes in join clause are not the same length.");
+            return result;
+        }
+        for (Node tuple1 : tupleList1) {
+            for (Node tuple2 : tupleList2) {
+                boolean isMatching = true;
+                for (int i = 0; i < attrList1.size(); i ++) {
+                    String attr1 = attrList1.get(i);
+                    String attr2 = attrList2.get(i);
+                    System.out.println("tuple1: " + tuple1.getTextContent() + " t1ATTR: " + tuple1.getAttributes());
+                    if (!tuple1.getAttributes().getNamedItem(attr1).getTextContent().equals(tuple2.getAttributes().getNamedItem(attr2).getTextContent())){
+                        isMatching = false;
+                    }
+                }
+                // if all attributes match, merge the tuples
+                if (isMatching){
+                    // cast to elem
+                    Element tuple1Elem = (Element) tuple1;
+                    Element tuple2Elem = (Element) tuple2;
+
+                    // merge tuple's attributes
+                    NamedNodeMap tuple2Attr = tuple2Elem.getAttributes();
+                    for (int i = 0; i < tuple2Attr.getLength(); i++) {
+                        Attr attr = (Attr) tuple2Attr.item(i);
+                        if (!tuple1Elem.hasAttribute(attr.getName())) {
+                            // If attribute doesn't exist, add it
+                            tuple1Elem.setAttribute(attr.getName(), attr.getValue());
+                        } else {
+                            // Handle conflicts (overwrite or append values)
+                            String existingValue = tuple1Elem.getAttribute(attr.getName());
+                            tuple1Elem.setAttribute(attr.getName(), existingValue + "," + attr.getValue());
+                        }
+                    }
+                    result.add((Node) tuple1Elem);
+                }
+            }
+        }
+        return result;
+    }
+
     /**
      * Entry point function to parse and evaluate all XQuery expressions.
      * This function takes a starting DOM node, and Abstract Syntax Tree (AST) as parameters.
@@ -153,12 +206,15 @@ public class XQueryProcessor {
                         if (value != null) {
                             result.addAll(value);
                         }
-                    }
-                    else if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.STRING)
+                    } else if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.STRING)
                         result.add(makeText(child.getText().substring(1, child.getText().length() - 1)));
-                } else if (child instanceof XQueryParser.AbsolutePathContext)
+                } else if (child instanceof XQueryParser.AbsolutePathContext){
                     result.addAll(XPathProcessor.parse(this.DOMElement, child));
+                } else if (child instanceof XQueryParser.JoinClauseContext){
+                    result.addAll(parseJoin(child, context));
+                }
                 break;
+
             }
             case 2: {
                 ParseTree letClause = AST.getChild(0);

@@ -27,7 +27,12 @@ forClause
 
 // Parser rules for join clause
 joinClause
-    : 'join (' xQuery ',' xQuery+ ',' ATTRLIST ',' ATTRLIST+ ')'
+    : 'join (' xQuery ',' xQuery ',' attrList ',' attrList ')'
+    ;
+
+// Parser rules for attribute list, TODO: differentiate between tag name and attribute name
+attrList
+    : '[' TAGNAME (',' TAGNAME)* ']'
     ;
 
 // Parser rules for let clause w/o the empty clause
@@ -103,7 +108,6 @@ filter
 
 // Lexer rules
 VAR: '$' LETTER (LETTER | DIGIT | '_')* ;
-ATTRLIST: '[' LETTER (LETTER | DIGIT) ']' ;
 TAGNAME: LETTER (LETTER | DIGIT)* ;
 ATTRIBUTENAME: LETTER (LETTER | DIGIT | '_' | '-')* ;
 //FILENAME: STRING;
