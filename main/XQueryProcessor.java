@@ -127,15 +127,28 @@ public class XQueryProcessor {
             System.out.println("Attributes in join clause are not the same length.");
             return result;
         }
+        // iterate over all tuples in tupleList1 and tupleList2
         for (Node tuple1 : tupleList1) {
             for (Node tuple2 : tupleList2) {
-                boolean isMatching = true;
+                boolean isMatching = false;
+                // iterate through join conditions
                 for (int i = 0; i < attrList1.size(); i ++) {
                     String attr1 = attrList1.get(i);
                     String attr2 = attrList2.get(i);
-                    System.out.println("tuple1: " + tuple1.getTextContent() + " t1ATTR: " + tuple1.getAttributes());
-                    if (!tuple1.getAttributes().getNamedItem(attr1).getTextContent().equals(tuple2.getAttributes().getNamedItem(attr2).getTextContent())){
-                        isMatching = false;
+                    // check for matching attributes per tuple1 and tuple2 pair
+                    for (int j = 0; j < tuple1.getChildNodes().getLength(); j++) {
+                        if (!attr1.equals(tuple1.getChildNodes().item(j).getNodeName()))
+                            continue;
+                        for (int k = 0; k < tuple2.getChildNodes().getLength(); k++) {
+                            if (!attr2.equals(tuple2.getChildNodes().item(k).getNodeName()))
+                                continue;
+                            String attr1Value = tuple1.getChildNodes().item(j).getTextContent();
+                            String attr2Value = tuple2.getChildNodes().item(k).getTextContent();
+                            if (attr1Value.equals(attr2Value)) {
+                                // if all attributes match, flag to merge the tuples
+                                isMatching = true;
+                            }
+                        }
                     }
                 }
                 // if all attributes match, merge the tuples
