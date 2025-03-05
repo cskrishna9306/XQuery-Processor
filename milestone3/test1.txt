@@ -1,0 +1,20 @@
+<result>{
+    for $tuple in join (
+        for $a in doc("j_caesar.xml")//ACT,
+            $sc in $a//SCENE,
+            $sp in $sc/SPEECH
+            return <tuple>{ <a>{$a}</a>, <speaker> {$sp/SPEAKER/text()} </speaker> }</tuple>,
+        for $b in doc("j_caesar.xml")//PGROUP,
+            $p in $b//PERSONA,
+            $desc in $b/GRPDESCR
+            where $desc/text() = "senators."
+            return <tuple>{ <persona> {$p/text()} </persona> }</tuple>,
+        [speaker], [persona] )
+    return
+    <senatoracts>
+    {
+        <senator>{ $tuple/b/*/persona }</senator>,
+        <act>{ $tuple/a/*/TITLE }</act>
+    }
+    </senatoracts>
+}</result>
