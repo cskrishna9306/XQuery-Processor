@@ -62,11 +62,11 @@ public class XQueryProcessor {
         return this.resultDocument.createTextNode(s);
     }
 
-    private List<Node> searchFor(ParseTree forClause, ParseTree letClause, ParseTree whereClause, ParseTree returnClause, HashMap<String, List<Node>> context, int i) {
+    private List<Node> parseFLWR(ParseTree forClause, ParseTree letClause, ParseTree whereClause, ParseTree returnClause, HashMap<String, List<Node>> context, int i) {
 
         // Base case: end $var in xQuery, evaluate the FLWR expression at leaf
         if (i >= forClause.getChildCount() - 2)
-            return evalFor(context, letClause, whereClause, returnClause);
+            return evalFLWR(context, letClause, whereClause, returnClause);
 
         // list of result nodes
         List<Node> result = new ArrayList<>();
@@ -85,7 +85,7 @@ public class XQueryProcessor {
             List<Node> valueList =  new ArrayList<>(Collections.singletonList(value));
             newContext.put(key, valueList);
             // Recursively traverses to next layer of $var in xQuery
-            result.addAll(searchFor(forClause, letClause, whereClause, returnClause, newContext, i + 4));
+            result.addAll(parseFLWR(forClause, letClause, whereClause, returnClause, newContext, i + 4));
         }
 
         // what is this?
@@ -95,7 +95,7 @@ public class XQueryProcessor {
         return result;
     }
 
-    private List<Node> evalFor(HashMap<String, List<Node>> context, ParseTree letClause, ParseTree whereClause, ParseTree returnClause){
+    private List<Node> evalFLWR(HashMap<String, List<Node>> context, ParseTree letClause, ParseTree whereClause, ParseTree returnClause){
 
         // list of result nodes
         List<Node> result = new ArrayList<>();
@@ -250,7 +250,7 @@ public class XQueryProcessor {
                 ParseTree whereClause = AST.getChild(2);
                 ParseTree returnClause = AST.getChild(3);
 
-                result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
+                result.addAll(parseFLWR(forClause, letClause, whereClause, returnClause, context, 1));
                 break;
             }
             case 9: {
