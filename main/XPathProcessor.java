@@ -107,14 +107,20 @@ public class XPathProcessor {
      * @return the list of nodes satisfying the XPath query
      */
     private static List<Node> parseAbsolutePath(Element DOMElement, ParseTree AST) {
-
         // here we evaluate absolute path in one of 2 cases:
         //  i. "/" - evaluate at the current element (root)
         // ii. "//" - evaluate at all the descendants of the root, this includes all the Element and Text nodes from the root
         switch (AST.getChild(3).getText()) {
             case "/": {
                 // the first cases operates from the root's perspective, evaluating all the children of the root
-                return parse(DOMElement, ((XQueryParser.AbsolutePathContext) AST).relativePath());
+//                System.out.println("/ case" +  parse(DOMElement, ((XQueryParser.AbsolutePathContext) AST).relativePath()));
+                // Alt: child is the root perspective
+                List <Node> result = new ArrayList<>();
+                if(((XQueryParser.AbsolutePathContext) AST).relativePath().getChildCount() == 1)
+                    result.add(DOMElement);
+                else
+                    result.addAll(parse(DOMElement, ((XQueryParser.AbsolutePathContext) AST).relativePath()));
+                return result;
             }
             case "//": {
                 // the second case operates on all the root's descendants which includes the root's direct and indirect children

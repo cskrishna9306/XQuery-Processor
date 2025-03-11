@@ -71,12 +71,10 @@ public class XQueryProcessor {
         // what is this?
         newContext.put(var.getText().substring(1),
                 parse(xQuery, context));
-
         return result;
     }
 
     private List<Node> evalFor(HashMap<String, List<Node>> context, ParseTree letClause, ParseTree whereClause, ParseTree returnClause){
-
         // list of result nodes
         List<Node> result = new ArrayList<>();
 
@@ -118,34 +116,58 @@ public class XQueryProcessor {
         List<String> attrList1 = new ArrayList<>();
         List<String> attrList2 = new ArrayList<>();
         for (int i = 0; i < joinClause.getChild(5).getChildCount(); i++ ) {
+            if (((TerminalNode) joinClause.getChild(5).getChild(i)).getSymbol().getType() != XQueryLexer.TAGNAME)
+                continue;
             attrList1.add(joinClause.getChild(5).getChild(i).getText());
         }
         for (int i = 0; i < joinClause.getChild(7).getChildCount(); i++ ){
+            if (((TerminalNode) joinClause.getChild(7).getChild(i)).getSymbol().getType() != XQueryLexer.TAGNAME)
+                continue;
             attrList2.add(joinClause.getChild(7).getChild(i).getText());
         }
         if (attrList1.size() != attrList2.size()) {
             System.out.println("Attributes in join clause are not the same length.");
             return result;
         }
+        // swap tupleList1 to be the smaller list
+//        if (tupleList1.size() > tupleList2.size()){
+//            List<Node> temp = tupleList1;
+//            tupleList1 = tupleList2;
+//            tupleList2 = temp;
+//            List<String> tempAttr = attrList1;
+//            attrList1 = attrList2;
+//            attrList2 = tempAttr;
+//        }
+
         // iterate over all tuples in tupleList1 and tupleList2
         for (Node tuple1 : tupleList1) {
             for (Node tuple2 : tupleList2) {
                 boolean isMatching = false;
                 // iterate through join conditions
-                for (int i = 0; i < attrList1.size(); i ++) {
+                String id1 = "";
+                String id2 = "";
+                for (int i = 0; i < attrList1.size(); i++) {
                     String attr1 = attrList1.get(i);
                     String attr2 = attrList2.get(i);
                     // check for matching attributes per tuple1 and tuple2 pair
                     for (int j = 0; j < tuple1.getChildNodes().getLength(); j++) {
+//                        System.out.println("Expeected Attr: " + attr1 + " Actual Attr: " + tuple1.getChildNodes().item(j).getNodeName());
+                        if (tuple1.getChildNodes().item(j).getNodeName().equals("id1")){
+                            id1 = tuple1.getChildNodes().item(j).getTextContent();
+                        }
                         if (!attr1.equals(tuple1.getChildNodes().item(j).getNodeName()))
                             continue;
                         for (int k = 0; k < tuple2.getChildNodes().getLength(); k++) {
+                            if (tuple2.getChildNodes().item(k).getNodeName().equals("id2")){
+                                id2 = tuple2.getChildNodes().item(k).getTextContent();
+                            }
                             if (!attr2.equals(tuple2.getChildNodes().item(k).getNodeName()))
                                 continue;
                             String attr1Value = tuple1.getChildNodes().item(j).getTextContent();
                             String attr2Value = tuple2.getChildNodes().item(k).getTextContent();
                             if (attr1Value.equals(attr2Value)) {
                                 // if all attributes match, flag to merge the tuples
+//                                System.out.println("Tuple " + id1 + " and Tuple " + id2 + " are matching.");
                                 isMatching = true;
                             }
                         }
@@ -154,23 +176,37 @@ public class XQueryProcessor {
                 // if all attributes match, merge the tuples
                 if (isMatching){
                     // cast to elem
-                    Element tuple1Elem = (Element) tuple1;
-                    Element tuple2Elem = (Element) tuple2;
+//                    Element tuple1Elem = (Element) tuple1;
+//                    Element tuple2Elem = (Element) tuple2;
 
-                    // merge tuple's attributes
-                    NamedNodeMap tuple2Attr = tuple2Elem.getAttributes();
-                    for (int i = 0; i < tuple2Attr.getLength(); i++) {
-                        Attr attr = (Attr) tuple2Attr.item(i);
-                        if (!tuple1Elem.hasAttribute(attr.getName())) {
-                            // If attribute doesn't exist, add it
-                            tuple1Elem.setAttribute(attr.getName(), attr.getValue());
-                        } else {
-                            // Handle conflicts (overwrite or append values)
-                            String existingValue = tuple1Elem.getAttribute(attr.getName());
-                            tuple1Elem.setAttribute(attr.getName(), existingValue + "," + attr.getValue());
-                        }
+//                    System.out.print("Tuple1" + tuple1.getChildNodes() + "Tuple2" + tuple2.getChildNodes() + "\n");
+
+                    // merge tuple's nodes
+                    //TODO: same attribute names in different tuples
+                    for (int i = 0; i < tuple2.getChildNodes().getLength(); i++) {
+                        Node node = tuple2.getChildNodes().item(i);
+                        Node importedNode = this.resultDocument.importNode(node, true);
+                        tuple1.appendChild(importedNode);
                     }
-                    result.add((Node) tuple1Elem);
+
+//                    // merge tuple's attributes
+//                    NamedNodeMap tuple2Attr = tuple2Elem.getAttributes();
+//                    for (int i = 0; i < tuple2Attr.getLength(); i++) {
+//                        Attr attr = (Attr) tuple2Attr.item(i);
+//                        if (!tuple1Elem.hasAttribute(attr.getName())) {
+//                            // If attribute doesn't exist, add it
+//                            tuple1Elem.setAttribute(attr.getName(), attr.getValue());
+//                        } else {
+//                            // Handle conflicts (overwrite or append values)
+//                            String existingValue = tuple1Elem.getAttribute(attr.getName());
+//                            tuple1Elem.setAttribute(attr.getName(), existingValue + "," + attr.getValue());
+//                        }
+//                    }
+//                    result.add((Node) tuple1Elem);
+//                    for (int j = 0; j < tuple1.getChildNodes().getLength(); j++) {
+//                        System.out.println("Tuple1" + tuple1.getChildNodes().item(j).getTextContent());
+//                    }
+                    result.add(tuple1);
                 }
             }
         }
@@ -193,8 +229,9 @@ public class XQueryProcessor {
             return parse(((XQueryParser.EvalContext) AST).xQuery(), context);
 
         // evaluate XQuery expression
-        if (AST instanceof XQueryParser.XQueryContext)
+        if (AST instanceof XQueryParser.XQueryContext) {
             return parseXQuery(AST, context);
+        }
 
         return new ArrayList<Node>();
     }
