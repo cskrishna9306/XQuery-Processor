@@ -6,6 +6,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.util.HashMap;
 import java.util.List;
@@ -35,14 +36,17 @@ public class Main {
 
             ParseTree AST = parser.eval();
 
-            // args[2] - output file
+            // args[2] - rewrite file
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document resultDocument = builder.newDocument();
-            XQueryProcessor processor = new XQueryProcessor(DOMTree.getDocumentElement(), resultDocument);
 
-            List<Node> result = processor.parse(AST, new HashMap<String, List<Node>>());
-            XMLToDOMParser.exportToXML(resultDocument, args[2]);
+            assert DOMTree != null;
+            XQueryProcessor processor = new XQueryProcessor(DOMTree.getDocumentElement(), new File(args[2]), resultDocument);
+
+            // args[3] - output file
+            processor.parse(AST, new HashMap<>());
+            XMLToDOMParser.exportToXML(resultDocument, args[3]);
         } catch (Exception e) {
             e.printStackTrace();
         }

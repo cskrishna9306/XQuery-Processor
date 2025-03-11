@@ -1,6 +1,7 @@
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.w3c.dom.*;
 
+import java.io.File;
 import java.util.*;
 
 // ANTLR import statements
@@ -14,6 +15,7 @@ public class XQueryProcessor {
 
     private final Node DOMElement;
     private final Document resultDocument;
+    private final File rewriteFile;
 
     /**
      * Constructor for the XQuery Processor class.
@@ -21,8 +23,9 @@ public class XQueryProcessor {
      * @param DOMElement the root element of the DOM tree
      * @param resultDocument the document object for the resulting XML
      */
-    public XQueryProcessor(Node DOMElement, Document resultDocument) {
+    public XQueryProcessor(Node DOMElement, File rewriteFile, Document resultDocument) {
         this.DOMElement = DOMElement;
+        this.rewriteFile = rewriteFile;
         this.resultDocument = resultDocument;
     }
 
