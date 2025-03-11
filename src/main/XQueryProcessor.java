@@ -171,8 +171,7 @@ public class XQueryProcessor {
                         if (value != null) {
                             result.addAll(value);
                         }
-                    }
-                    else if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.STRING)
+                    } else if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.STRING)
                         result.add(makeText(child.getText().substring(1, child.getText().length() - 1)));
                 } else if (child instanceof XQueryParser.AbsolutePathContext)
                     result.addAll(XPathProcessor.parse(this.DOMElement, child));
@@ -249,6 +248,94 @@ public class XQueryProcessor {
                 ParseTree letClause = AST.getChild(1);
                 ParseTree whereClause = AST.getChild(2);
                 ParseTree returnClause = AST.getChild(3);
+
+                // Step 1: Rewrite the for clause with the join operator
+                // This hash map represents the root parent of the variable
+                HashMap<String, String> dependency = new HashMap<>();
+                // This hash map represents the disjoint set of connected components rooted at the key
+//                HashMap<String, HashMap<String, List<String>>> connectedComponents = new HashMap<>();
+                HashMap<String, ConnectedComponent> connectedComponents = new HashMap<>();
+
+                // Step 1a: Build the dependency graph of all the dependant "for clause" variables
+                for (int i = 1; i < forClause.getChildCount() - 2; i += 4) {
+                    // Extract the variable name
+                    String variable = forClause.getChild(i).getText().substring(1);
+
+                    // Check if the XQuery is an absolute path
+                    ParseTree xQuery = forClause.getChild(i + 2).getChild(0);
+                    if (xQuery instanceof XQueryParser.AbsolutePathContext) {
+                        // Update the connected components hash map
+//                        connectedComponents.put(variable, new HashMap<String, List<String>>() {{
+//                            put("Variable Group", new ArrayList<>());
+//                            put("Filters", new ArrayList<>());
+//                            put("Join Operator", new ArrayList<>());
+//                        }});
+                        connectedComponents.put(variable, new ConnectedComponent(variable));
+                        // Update the dependency hash map
+                        dependency.put(variable, variable);
+                    } else if (xQuery instanceof XQueryParser.XQueryContext) {
+                        // Add the dependency to its respective connected component
+                        String dependentVariable = xQuery.getText().substring(1);
+                        // Update the connected components hash map
+//                        connectedComponents.get(dependentVariable).get("Variable Group").add(variable);
+                        connectedComponents.get(dependentVariable).addVariable(variable);
+                        // Update the dependency hash map
+                        dependency.put(variable, dependency.get(dependentVariable));
+                    }
+                }
+
+                // Step 1b: Now, evaluate the where clause to determine the joins across the connected components
+                // Since we have the connected components, determine the attributes participating in the join
+
+                // Maintain a queue of the conditions
+                Queue<ParseTree> queue = new LinkedList<>();
+                // we observe the conditions from the parent
+                queue.add(whereClause.getChild(1));
+
+                while (!queue.isEmpty()) {
+                    ParseTree parent = queue.remove();
+                    ParseTree child1 = parent.getChild(0);
+                    ParseTree child2 = parent.getChild(2);
+
+                    // Base case: Both are XQuery (if child 1 is XQuery then child 2 is also XQuery)
+                    if (child1 instanceof XQueryParser.XQueryContext) {
+                        String variable = child1.getChild(0).getText().substring(1);
+                        TerminalNode operator = (TerminalNode) child2.getChild(0);
+
+                        if (operator.getSymbol().getType() == XQueryLexer.VAR) {
+//                            connectedComponents
+//                                    .get(dependency.get(variable))
+//                                    .get("Join Operator")
+//                                    .add(variable);
+                            connectedComponents
+                                    .get(dependency.get(variable))
+                                    .addJoin(new AbstractMap.SimpleEntry<>(variable, operator.getText().substring(1)));
+//                            connectedComponents
+//                                    .get(dependency.get(operator.getText().substring(1)))
+//                                    .get("Join Operator")
+//                                    .add(operator.getText().substring(1));
+                            connectedComponents
+                                    .get(dependency.get(operator.getText().substring(1)))
+                                    .addJoin(new AbstractMap.SimpleEntry<>(operator.getText().substring(1), variable));
+                        } else if (operator.getSymbol().getType() == XQueryLexer.STRING)
+//                            connectedComponents
+//                                    .get(dependency.get(variable))
+//                                    .get("Filters")
+//                                    .add(variable);
+                            connectedComponents
+                                    .get(dependency.get(variable))
+                                    .addFilter(variable);
+                        continue;
+                    }
+
+                    // Recursive Case: Both are conditions (if child 1 is condition then child 2 also has to be condition)
+                    queue.add(child1);
+                    queue.add(child2);
+                }
+
+                System.out.println(connectedComponents);
+
+                // Step 2: Use hash-join for an optimized join operation
 
                 result.addAll(parseFLWR(forClause, letClause, whereClause, returnClause, context, 1));
                 break;
