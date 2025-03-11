@@ -17,6 +17,8 @@ xQuery
     | '<' TAGNAME '>' '{' xQuery '}' '</' TAGNAME '>'
     | forClause letClauseWithEmpty whereClause returnClause
     | letClause xQuery
+    | 'for' VAR 'in' joinClause returnClause
+    | joinClause
     ;
 
 // Parser rules for the for clause
@@ -44,6 +46,16 @@ whereClause
 // Parser rules for return clause
 returnClause
     : 'return' xQuery
+    ;
+
+// Parser rules for join clause
+joinClause
+    : 'join (' xQuery ',' xQuery ',' attributeList ',' attributeList ')'
+    ;
+
+// Parser rules for attribute list
+attributeList
+    : '[' TAGNAME (',' TAGNAME)* ']'
     ;
 
 // Parser rules for condition
@@ -97,13 +109,11 @@ filter
 
 // Lexer rules
 VAR: '$' LETTER (LETTER | DIGIT | '_')* ;
-TAGNAME: LETTER (LETTER | DIGIT)* ;
+TAGNAME: LETTER (LETTER | DIGIT | '-')* ;
 ATTRIBUTENAME: LETTER (LETTER | DIGIT | '_' | '-')* ;
-//FILENAME: STRING;
 
 // Define operators and other symbols as fragments
 STRING: ('"' | '“') (~["\r\n])* ('"' | '”') ;
-//STRING: (LETTER | DIGIT | '_' | '.')+;
 DIGIT: [0-9] ;
 LETTER: [a-zA-Z] ;
 
