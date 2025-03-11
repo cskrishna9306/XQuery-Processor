@@ -50,7 +50,7 @@ returnClause
 
 // Parser rules for join clause
 joinClause
-    : 'join (' xQuery ',' xQuery ',' attributeList ',' attributeList ')'
+    : 'join(' xQuery ',' xQuery ',' attributeList ',' attributeList ')'
     ;
 
 // Parser rules for attribute list

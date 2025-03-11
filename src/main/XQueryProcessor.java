@@ -3,6 +3,7 @@ import org.w3c.dom.*;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 // ANTLR import statements
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -63,6 +64,88 @@ public class XQueryProcessor {
      */
     private Text makeText(String s) {
         return this.resultDocument.createTextNode(s);
+    }
+
+    /**
+     * This function implements the optimized hash-join operation.
+     *
+     * @param joinClause the join clause to evaluate
+     * @param context the current context
+     * @return the list of joined tuples based on the specified join operations
+     */
+    private List<Node> parseJoin(ParseTree joinClause, HashMap<String, List<Node>> context) {
+        List<Node> result = new ArrayList<>();
+
+        List<Node> list1 = parse(joinClause.getChild(1), context);
+        List<Node> list2 = parse(joinClause.getChild(3), context);
+
+        List<String> attributeList1 = Arrays.stream(joinClause.getChild(5)
+                                            .getText()
+                                            .replaceAll("[\\[\\]]", "")
+                                            .trim()
+                                            .split("\\s*,\\s*"))
+                                            .collect(Collectors.toList());
+        List<String> attributeList2 = new ArrayList<>();
+
+//        for (int i = 0; i < joinClause.getChild(5).getChildCount(); i++)
+//            attrList1.add(joinClause.getChild(5).getChild(i).getText());
+
+        for (int i = 0; i < joinClause.getChild(7).getChildCount(); i++)
+            attributeList2.add(joinClause.getChild(7).getChild(i).getText());
+
+        if (attributeList1.size() != attributeList2.size()) {
+            System.out.println("Attributes in join clause are not the same length.");
+            return result;
+        }
+
+        // iterate over all tuples in tupleList1 and tupleList2
+        for (Node tuple1 : list1) {
+            for (Node tuple2 : list2) {
+                boolean isMatching = false;
+                // iterate through join conditions
+                for (int i = 0; i < attributeList1.size(); i ++) {
+                    String attr1 = attributeList1.get(i);
+                    String attr2 = attributeList2.get(i);
+                    // check for matching attributes per tuple1 and tuple2 pair
+                    for (int j = 0; j < tuple1.getChildNodes().getLength(); j++) {
+                        if (!attr1.equals(tuple1.getChildNodes().item(j).getNodeName()))
+                            continue;
+                        for (int k = 0; k < tuple2.getChildNodes().getLength(); k++) {
+                            if (!attr2.equals(tuple2.getChildNodes().item(k).getNodeName()))
+                                continue;
+                            String attr1Value = tuple1.getChildNodes().item(j).getTextContent();
+                            String attr2Value = tuple2.getChildNodes().item(k).getTextContent();
+                            if (attr1Value.equals(attr2Value)) {
+                                // if all attributes match, flag to merge the tuples
+                                isMatching = true;
+                            }
+                        }
+                    }
+                }
+                // if all attributes match, merge the tuples
+                if (isMatching){
+                    // cast to elem
+                    Element tuple1Elem = (Element) tuple1;
+                    Element tuple2Elem = (Element) tuple2;
+
+                    // merge tuple's attributes
+                    NamedNodeMap tuple2Attr = tuple2Elem.getAttributes();
+                    for (int i = 0; i < tuple2Attr.getLength(); i++) {
+                        Attr attr = (Attr) tuple2Attr.item(i);
+                        if (!tuple1Elem.hasAttribute(attr.getName())) {
+                            // If attribute doesn't exist, add it
+                            tuple1Elem.setAttribute(attr.getName(), attr.getValue());
+                        } else {
+                            // Handle conflicts (overwrite or append values)
+                            String existingValue = tuple1Elem.getAttribute(attr.getName());
+                            tuple1Elem.setAttribute(attr.getName(), existingValue + "," + attr.getValue());
+                        }
+                    }
+                    result.add((Node) tuple1Elem);
+                }
+            }
+        }
+        return result;
     }
 
     private List<Node> parseFLWR(ParseTree forClause, ParseTree letClause, ParseTree whereClause, ParseTree returnClause, HashMap<String, List<Node>> context, int i) {
@@ -141,7 +224,6 @@ public class XQueryProcessor {
      * @return the list of nodes fitting the XQuery query
      */
     public List<Node> parse(ParseTree AST, HashMap<String, List<Node>> context) {
-//        super.parse();
         // evaluate the entry point
         if (AST instanceof XQueryParser.EvalContext)
             return parse(((XQueryParser.EvalContext) AST).xQuery(), context);
@@ -169,15 +251,22 @@ public class XQueryProcessor {
                 ParseTree child = AST.getChild(0);
                 if (child instanceof TerminalNode) {
                     if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.VAR) {
+                        // evaluate if the terminal node is a variable lexer
                         String key = child.getText().substring(1);
                         List<Node> value = context.get(key);
                         if (value != null) {
                             result.addAll(value);
                         }
                     } else if (((TerminalNode) child).getSymbol().getType() == XQueryLexer.STRING)
+                        // evaluate if the terminal node is a string lexer
                         result.add(makeText(child.getText().substring(1, child.getText().length() - 1)));
-                } else if (child instanceof XQueryParser.AbsolutePathContext)
+                } else if (child instanceof XQueryParser.AbsolutePathContext) {
+                    // evaluate the absolute path
                     result.addAll(XPathProcessor.parse(this.DOMElement, child));
+                } else if (child instanceof XQueryParser.JoinClauseContext) {
+                    // evaluate the optimized join operation
+                    result.addAll(parseJoin(child, context));
+                }
                 break;
             }
             case 2: {
@@ -342,6 +431,9 @@ public class XQueryProcessor {
 
                 result.addAll(parseFLWR(forClause, letClause, whereClause, returnClause, context, 1));
                 break;
+            }
+            case 5: {
+                // evaluate the rewritten JOIN operation
             }
             case 9: {
                 result.add(makeElement(AST.getChild(1).getText(), parse(AST.getChild(4), context)));
