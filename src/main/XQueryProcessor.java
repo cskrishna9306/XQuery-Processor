@@ -66,14 +66,20 @@ public class XQueryProcessor {
         return this.resultDocument.createTextNode(s);
     }
 
-    // Function to retrieve text content of a **direct child** element
-    public static String getDirectChildText(Element parent, String tagName) {
+    /**
+     * Function to retrieve text content of a **direct child** element.
+     *
+     * @param parent the parent element
+     * @param tagName the tag name to be searched for in this parent's children
+     * @return the text within the parent's relevant children, otherwise empty string
+     */
+    public String getDirectChildText(Element parent, String tagName) {
         NodeList children = parent.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
             Node node = children.item(i);
-            if (node.getNodeType() == Node.ELEMENT_NODE && node.getNodeName().equals(tagName)) {
-                return node.getTextContent().trim(); // Return direct child's text
-            }
+            if (node.getNodeType() == Node.ELEMENT_NODE && node.getNodeName().equals(tagName))
+                // Return direct child's text
+                return node.getTextContent().trim();
         }
         return ""; // Default if not found
     }
@@ -116,8 +122,22 @@ public class XQueryProcessor {
             return result;
         }
 
-        // we need to hash the attributes value
+        // Configure the first list to be the smaller of the 2 lists
+        if (list1.size() > list2.size()) {
+            // Swap the 2 join operands
+            List<Node> tempList = list1;
+            list1 = list2;
+            list2 = tempList;
+            // Swap the 2 join attribute lists
+            List<String> tempAttributeList = attributeList1;
+            attributeList1 = attributeList2;
+            attributeList2 = tempAttributeList;
+        }
+
+        // Create a hash-map for the tuples from the first join
         HashMap<List<String>, List<Node>> hashJoin = new HashMap<>();
+
+        // Iterating through the
         for (Node tuple : list1) {
             // Construct hash key for each attribute combination using Stream API
             List<String> key = attributeList1.stream()
@@ -154,11 +174,22 @@ public class XQueryProcessor {
         return result;
     }
 
+    /**
+     * This function recursively parses the nested for loops in the for clause.
+     *
+     * @param forClause the for clause of the FLWR expression
+     * @param letClause the optional let clause of the FLWR expression
+     * @param whereClause the optional where clause of the FLWR expression
+     * @param returnClause the return clause of the FLWR expression
+     * @param context the current context
+     * @param i the positional argument we are looking at in the for clause
+     * @return the list of nodes fitting the FLWR expression
+     */
     private List<Node> parseFLWR(ParseTree forClause, ParseTree letClause, ParseTree whereClause, ParseTree returnClause, HashMap<String, List<Node>> context, int i) {
 
         // Base case: end $var in xQuery, evaluate the FLWR expression at leaf
         if (i >= forClause.getChildCount() - 2)
-            return evalFLWR(context, letClause, whereClause, returnClause);
+            return evalFLWR(letClause, whereClause, returnClause, context);
 
         // list of result nodes
         List<Node> result = new ArrayList<>();
@@ -183,7 +214,17 @@ public class XQueryProcessor {
         return result;
     }
 
-    private List<Node> evalFLWR(HashMap<String, List<Node>> context, ParseTree letClause, ParseTree whereClause, ParseTree returnClause){
+    /**
+     * This function serves as the base case of the FLWR expression.
+     * Here, we evaluate the  let, where, and return clauses with the provided context.
+     *
+     * @param letClause the optional let clause of the FLWR expression
+     * @param whereClause the optional where clause of the FLWR expression
+     * @param returnClause the return clause of the FLWR expression
+     * @param context the current context to be evaluated at
+     * @return the list of nodes fitting the FLWR expression
+     */
+    private List<Node> evalFLWR(ParseTree letClause, ParseTree whereClause, ParseTree returnClause, HashMap<String, List<Node>> context){
 
         // list of result nodes
         List<Node> result = new ArrayList<>();
