@@ -17,7 +17,6 @@ xQuery
     | '<' TAGNAME '>' '{' xQuery '}' '</' TAGNAME '>'
     | forClause letClauseWithEmpty whereClause returnClause
     | letClause xQuery
-    | 'for' VAR 'in' joinClause returnClause
     | joinClause
     ;
 

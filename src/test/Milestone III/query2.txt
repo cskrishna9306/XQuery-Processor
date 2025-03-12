@@ -1,5 +1,5 @@
-for $d1 in doc("large-data.xml")/data/d,
-    $d2 in doc("large-data.xml")/data/d,
+for $d1 in doc("large-data.xml")/d,
+    $d2 in doc("large-data.xml")/d,
     $id1 in $d1/id/text(),
     $id2 in $d2/id/text(),
     $a1 in $d1/a2/text(),
