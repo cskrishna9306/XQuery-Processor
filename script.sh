@@ -23,6 +23,7 @@ java_files=$(find main -name "*.java")
 javac -cp lib/* -d classes $java_files
 #java -cp "classes:lib/*" main.Main ./main/data/j_caesar.xml ./milestone3/query1.txt ./main/data/result/queryRewrite1.txt query1.xml
 java -cp "classes:lib/*" main.Main ./main/data/large-data.xml ./milestone3/query2_j.txt ./main/data/result/queryRewrite2_j.txt query2_j.xml
+#java -cp "classes:lib/*" main.Main ./main/data/large-data.xml ./milestone3/rewrite3.txt ./main/data/result/rewrite3.txt rewrite3.xml
 
 #javac -cp lib/* ./main/Main.java
 #java -cp lib/* main.Main ./main/j\_caesar.xml ./test.xml result.xml

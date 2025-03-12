@@ -38,27 +38,19 @@ public class Main {
 
             ParseTree AST = parser.eval();
 
-            // args[1] - path to rewrite
-            // dummy code to test impl
-//            System.out.println("args2: " + args[2]);
-//            DocumentBuilderFactory factory1 = DocumentBuilderFactory.newInstance();
-//            DocumentBuilder builder1 = factory1.newDocumentBuilder();
-//            Document resultDocument1 = builder1.newDocument();
-//            XQueryProcessor processor1 = new XQueryProcessor(DOMTree.getDocumentElement(), resultDocument1);
-//
-//            List<Node> result1 = processor1.parse(AST, new HashMap<String, List<Node>>());
-//            System.out.println("result : " + result);
-//            for (Node node : result){
-//                System.out.println("node : " + node.getTextContent());
-//            }
-//            XMLToDOMParser.exportToXML(resultDocument1, args[2]);
+            // args[2] - path to rewrite
+            System.out.println("args2: " + args[2]);
+            String rewriteFilename = args[2];
+//            File rewriteFile = new File(rewriteFilename);
+//            rewriteFile.delete();
+//            rewriteFile.createNewFile();
 
 
             // args[3] - output file
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document resultDocument = builder.newDocument();
-            XQueryProcessor processor = new XQueryProcessor(DOMTree.getDocumentElement(), resultDocument);
+            XQueryProcessor processor = new XQueryProcessor(DOMTree.getDocumentElement(), resultDocument, "rewriteFilename");
 
 
             List<Node> result = processor.parse(AST, new HashMap<String, List<Node>>());

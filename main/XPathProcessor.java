@@ -113,14 +113,14 @@ public class XPathProcessor {
         switch (AST.getChild(3).getText()) {
             case "/": {
                 // the first cases operates from the root's perspective, evaluating all the children of the root
-//                System.out.println("/ case" +  parse(DOMElement, ((XQueryParser.AbsolutePathContext) AST).relativePath()));
+                return parse(DOMElement, ((XQueryParser.AbsolutePathContext) AST).relativePath());
                 // Alt: child is the root perspective
-                List <Node> result = new ArrayList<>();
-                if(((XQueryParser.AbsolutePathContext) AST).relativePath().getChildCount() == 1)
-                    result.add(DOMElement);
-                else
-                    result.addAll(parse(DOMElement, ((XQueryParser.AbsolutePathContext) AST).relativePath()));
-                return result;
+//                List <Node> result = new ArrayList<>();
+//                if(((XQueryParser.AbsolutePathContext) AST).relativePath().getChildCount() == 1)
+//                    result.add(DOMElement);
+//                else
+//                    result.addAll(parse(DOMElement, ((XQueryParser.AbsolutePathContext) AST).relativePath()));
+//                return result;
             }
             case "//": {
                 // the second case operates on all the root's descendants which includes the root's direct and indirect children

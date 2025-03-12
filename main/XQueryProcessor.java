@@ -1,8 +1,10 @@
 package main;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.w3c.dom.*;
+import java.io.FileWriter;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 // ANTLR import statements
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -10,15 +12,18 @@ import org.antlr.v4.runtime.tree.ParseTree;
 // Custom import packages
 import main.antlr.XQueryParser;
 import main.antlr.XQueryLexer;
+import main.ConnectedComponent;
 
 public class XQueryProcessor {
 
     private final Node DOMElement;
     private final Document resultDocument;
+    private final String rewriteFilename;
 
-    public XQueryProcessor(Node DOMElement, Document resultDocument) {
+    public XQueryProcessor(Node DOMElement, Document resultDocument, String rewriteFilename) {
         this.DOMElement = DOMElement;
         this.resultDocument = resultDocument;
+        this.rewriteFilename = rewriteFilename;
     }
 
     private Element makeElement(String tagName, List<Node> children) {
@@ -41,6 +46,13 @@ public class XQueryProcessor {
     private Text makeText(String s) {
         return this.resultDocument.createTextNode(s);
     }
+
+    private void rewriteJoins(){
+//        FileWriter myWriter = new FileWriter(rewriteFilename);
+//        myWriter.write("");
+//        myWriter.close();
+    }
+
 
     private List<Node> searchFor(ParseTree forClause, ParseTree letClause, ParseTree whereClause, ParseTree returnClause, HashMap<String, List<Node>> context, int i) {
         // Base case: end $var in xQuery, evaluate the FLWR expression at leaf
@@ -109,104 +121,81 @@ public class XQueryProcessor {
         return result;
     }
 
+    // Function to retrieve text content of a **direct child** element
+    public static String getDirectChildText(Element parent, String tagName) {
+        NodeList children = parent.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node node = children.item(i);
+            if (node.getNodeType() == Node.ELEMENT_NODE && node.getNodeName().equals(tagName)) {
+                return node.getTextContent().trim(); // Return direct child's text
+            }
+        }
+        return ""; // Default if not found
+    }
+
+
     private List<Node> parseJoin(ParseTree joinClause, HashMap<String, List<Node>> context) {
+
+        // List of result nodes
         List<Node> result = new ArrayList<>();
-        List<Node> tupleList1 = parse(joinClause.getChild(1), context);
-        List<Node> tupleList2 = parse(joinClause.getChild(3), context);
-        List<String> attrList1 = new ArrayList<>();
-        List<String> attrList2 = new ArrayList<>();
-        for (int i = 0; i < joinClause.getChild(5).getChildCount(); i++ ) {
-            if (((TerminalNode) joinClause.getChild(5).getChild(i)).getSymbol().getType() != XQueryLexer.TAGNAME)
-                continue;
-            attrList1.add(joinClause.getChild(5).getChild(i).getText());
-        }
-        for (int i = 0; i < joinClause.getChild(7).getChildCount(); i++ ){
-            if (((TerminalNode) joinClause.getChild(7).getChild(i)).getSymbol().getType() != XQueryLexer.TAGNAME)
-                continue;
-            attrList2.add(joinClause.getChild(7).getChild(i).getText());
-        }
-        if (attrList1.size() != attrList2.size()) {
-            System.out.println("Attributes in join clause are not the same length.");
+
+        // Extract the tuples from the first join operand
+        List<Node> list1 = parse(joinClause.getChild(1), context);
+        // Extract the tuples from the second join operand
+        List<Node> list2 = parse(joinClause.getChild(3), context);
+
+        // extract the join attributes from the first join operand
+        List<String> attributeList1 = Arrays.stream(joinClause.getChild(5)
+                        .getText()
+                        .replaceAll("[\\[\\]]", "")
+                        .trim()
+                        .split("\\s*,\\s*"))
+                .collect(Collectors.toList());
+        // extract the join attributes from the second join operand
+        List<String> attributeList2 = Arrays.stream(joinClause.getChild(7)
+                        .getText()
+                        .replaceAll("[\\[\\]]", "")
+                        .trim()
+                        .split("\\s*,\\s*"))
+                .collect(Collectors.toList());
+
+        // Check if the join attributes are valid
+        if (attributeList1.size() != attributeList2.size()) {
+            System.err.println("Join attributes mismatch");
             return result;
         }
-        // swap tupleList1 to be the smaller list
-//        if (tupleList1.size() > tupleList2.size()){
-//            List<Node> temp = tupleList1;
-//            tupleList1 = tupleList2;
-//            tupleList2 = temp;
-//            List<String> tempAttr = attrList1;
-//            attrList1 = attrList2;
-//            attrList2 = tempAttr;
-//        }
 
-        // iterate over all tuples in tupleList1 and tupleList2
-        for (Node tuple1 : tupleList1) {
-            for (Node tuple2 : tupleList2) {
-                boolean isMatching = false;
-                // iterate through join conditions
-                String id1 = "";
-                String id2 = "";
-                for (int i = 0; i < attrList1.size(); i++) {
-                    String attr1 = attrList1.get(i);
-                    String attr2 = attrList2.get(i);
-                    // check for matching attributes per tuple1 and tuple2 pair
-                    for (int j = 0; j < tuple1.getChildNodes().getLength(); j++) {
-//                        System.out.println("Expeected Attr: " + attr1 + " Actual Attr: " + tuple1.getChildNodes().item(j).getNodeName());
-                        if (tuple1.getChildNodes().item(j).getNodeName().equals("id1")){
-                            id1 = tuple1.getChildNodes().item(j).getTextContent();
-                        }
-                        if (!attr1.equals(tuple1.getChildNodes().item(j).getNodeName()))
-                            continue;
-                        for (int k = 0; k < tuple2.getChildNodes().getLength(); k++) {
-                            if (tuple2.getChildNodes().item(k).getNodeName().equals("id2")){
-                                id2 = tuple2.getChildNodes().item(k).getTextContent();
-                            }
-                            if (!attr2.equals(tuple2.getChildNodes().item(k).getNodeName()))
-                                continue;
-                            String attr1Value = tuple1.getChildNodes().item(j).getTextContent();
-                            String attr2Value = tuple2.getChildNodes().item(k).getTextContent();
-                            if (attr1Value.equals(attr2Value)) {
-                                // if all attributes match, flag to merge the tuples
-//                                System.out.println("Tuple " + id1 + " and Tuple " + id2 + " are matching.");
-                                isMatching = true;
-                            }
-                        }
-                    }
-                }
-                // if all attributes match, merge the tuples
-                if (isMatching){
-                    // cast to elem
-//                    Element tuple1Elem = (Element) tuple1;
-//                    Element tuple2Elem = (Element) tuple2;
+        // we need to hash the attributes value
+        HashMap<List<String>, List<Node>> hashJoin = new HashMap<>();
+        for (Node tuple : list1) {
+            // Construct hash key for each attribute combination using Stream API
+            List<String> key = attributeList1.stream()
+                    .map(attr -> getDirectChildText((Element) tuple, attr))
+                    .collect(Collectors.toList());
 
-//                    System.out.print("Tuple1" + tuple1.getChildNodes() + "Tuple2" + tuple2.getChildNodes() + "\n");
+            // Use `computeIfAbsent` for efficient insertion
+            hashJoin.computeIfAbsent(key, k -> new ArrayList<>()).add(tuple);
+        }
 
-                    // merge tuple's nodes
-                    //TODO: same attribute names in different tuples
-                    for (int i = 0; i < tuple2.getChildNodes().getLength(); i++) {
-                        Node node = tuple2.getChildNodes().item(i);
-                        Node importedNode = this.resultDocument.importNode(node, true);
-                        tuple1.appendChild(importedNode);
-                    }
+        // Iterate over the second list of tuples
+        for (Node tuple : list2) {
+            // Construct hash key for each attribute combination using Stream API
+            List<String> key = attributeList2.stream()
+                    .map(attr -> getDirectChildText((Element) tuple, attr))
+                    .collect(Collectors.toList());
 
-//                    // merge tuple's attributes
-//                    NamedNodeMap tuple2Attr = tuple2Elem.getAttributes();
-//                    for (int i = 0; i < tuple2Attr.getLength(); i++) {
-//                        Attr attr = (Attr) tuple2Attr.item(i);
-//                        if (!tuple1Elem.hasAttribute(attr.getName())) {
-//                            // If attribute doesn't exist, add it
-//                            tuple1Elem.setAttribute(attr.getName(), attr.getValue());
-//                        } else {
-//                            // Handle conflicts (overwrite or append values)
-//                            String existingValue = tuple1Elem.getAttribute(attr.getName());
-//                            tuple1Elem.setAttribute(attr.getName(), existingValue + "," + attr.getValue());
-//                        }
-//                    }
-//                    result.add((Node) tuple1Elem);
-//                    for (int j = 0; j < tuple1.getChildNodes().getLength(); j++) {
-//                        System.out.println("Tuple1" + tuple1.getChildNodes().item(j).getTextContent());
-//                    }
-                    result.add(tuple1);
+            // Check to see if there is a match from the first table, otherwise skip
+            if (hashJoin.containsKey(key)) {
+                // Join the 2 nodes and append to result
+                for (Node node : hashJoin.get(key)) {
+                    // Create a deep copy of tuple1
+                    Element copiedTuple = (Element) node.cloneNode(true);
+
+                    NodeList children = tuple.getChildNodes();
+                    for (int i = 0; i < children.getLength(); i++)
+                        copiedTuple.appendChild(children.item(i).cloneNode(true));
+
+                    result.add(copiedTuple);
                 }
             }
         }
@@ -340,9 +329,99 @@ public class XQueryProcessor {
                 ParseTree letClause = AST.getChild(1);
                 ParseTree whereClause = AST.getChild(2);
                 ParseTree returnClause = AST.getChild(3);
-                result.addAll(searchFor(forClause, letClause, whereClause, returnClause,context, 1));
+                System.out.println("where clause: " + whereClause.getText());
+                if (whereClause.getChildCount() != 0) {
+                    // Step 1: Rewrite the for clause with the join operator
+                    // This hash map represents the root parent of the variable
+                    HashMap<String, String> dependency = new HashMap<>();
+                    // This hash map represents the disjoint set of connected components rooted at the key
+//                HashMap<String, HashMap<String, List<String>>> connectedComponents = new HashMap<>();
+                    HashMap<String, ConnectedComponent> connectedComponents = new HashMap<>();
+
+                    // Step 1a: Build the dependency graph of all the dependant "for clause" variables
+                    for (int i = 1; i < forClause.getChildCount() - 2; i += 4) {
+                        // Extract the variable name
+                        String variable = forClause.getChild(i).getText().substring(1);
+
+                        // Check if the XQuery is an absolute path
+                        ParseTree xQuery = forClause.getChild(i + 2).getChild(0);
+                        if (xQuery instanceof XQueryParser.AbsolutePathContext) {
+                            // Update the connected components hash map
+//                        connectedComponents.put(variable, new HashMap<String, List<String>>() {{
+//                            put("Variable Group", new ArrayList<>());
+//                            put("Filters", new ArrayList<>());
+//                            put("Join Operator", new ArrayList<>());
+//                        }});
+                            connectedComponents.put(variable, new ConnectedComponent(variable));
+                            // Update the dependency hash map
+                            dependency.put(variable, variable);
+                        } else if (xQuery instanceof XQueryParser.XQueryContext) {
+                            // Add the dependency to its respective connected component
+                            String dependentVariable = xQuery.getText().substring(1);
+                            // Update the connected components hash map
+//                        connectedComponents.get(dependentVariable).get("Variable Group").add(variable);
+                            connectedComponents.get(dependentVariable).addVariable(variable);
+                            // Update the dependency hash map
+                            dependency.put(variable, dependency.get(dependentVariable));
+                        }
+                    }
+
+                    // Step 1b: Now, evaluate the where clause to determine the joins across the connected components
+                    // Since we have the connected components, determine the attributes participating in the join
+
+                    // Maintain a queue of the conditions
+                    Queue<ParseTree> queue = new LinkedList<>();
+                    // we observe the conditions from the parent
+                    queue.add(whereClause.getChild(1));
+
+                    while (!queue.isEmpty()) {
+                        ParseTree parent = queue.remove();
+                        ParseTree child1 = parent.getChild(0);
+                        ParseTree child2 = parent.getChild(2);
+
+                        // Base case: Both are XQuery (if child 1 is XQuery then child 2 is also XQuery)
+                        if (child1 instanceof XQueryParser.XQueryContext) {
+                            String variable = child1.getChild(0).getText().substring(1);
+                            TerminalNode operator = (TerminalNode) child2.getChild(0);
+
+                            if (operator.getSymbol().getType() == XQueryLexer.VAR) {
+//                            connectedComponents
+//                                    .get(dependency.get(variable))
+//                                    .get("Join Operator")
+//                                    .add(variable);
+                                connectedComponents
+                                        .get(dependency.get(variable))
+                                        .addJoin(new AbstractMap.SimpleEntry<>(variable, operator.getText().substring(1)));
+//                            connectedComponents
+//                                    .get(dependency.get(operator.getText().substring(1)))
+//                                    .get("Join Operator")
+//                                    .add(operator.getText().substring(1));
+                                connectedComponents
+                                        .get(dependency.get(operator.getText().substring(1)))
+                                        .addJoin(new AbstractMap.SimpleEntry<>(operator.getText().substring(1), variable));
+                            } else if (operator.getSymbol().getType() == XQueryLexer.STRING)
+//                            connectedComponents
+//                                    .get(dependency.get(variable))
+//                                    .get("Filters")
+//                                    .add(variable);
+                                connectedComponents
+                                        .get(dependency.get(variable))
+                                        .addFilter(variable);
+                            continue;
+                        }
+
+                        // Recursive Case: Both are conditions (if child 1 is condition then child 2 also has to be condition)
+                        queue.add(child1);
+                        queue.add(child2);
+                    }
+
+                    System.out.println(connectedComponents);
+                }
+
+                result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
 
                 break;
+
             }
             case 9: {
                 result.add(makeElement(AST.getChild(1).getText(), parse(AST.getChild(4), context)));
