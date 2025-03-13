@@ -3,6 +3,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.w3c.dom.*;
 import java.io.FileWriter;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,10 +48,40 @@ public class XQueryProcessor {
         return this.resultDocument.createTextNode(s);
     }
 
-    private void rewriteJoins(){
-//        FileWriter myWriter = new FileWriter(rewriteFilename);
-//        myWriter.write("");
-//        myWriter.close();
+    private void rewriteJoins(HashMap<String, ConnectedComponent> connectedComponents){
+        FileWriter myWriter = null;
+        try {
+            myWriter = new FileWriter(rewriteFilename);
+            System.out.println("rewrite: ");
+            myWriter.write("for ");
+            for (ConnectedComponent component : connectedComponents.values()){
+                System.out.println("Root: " + component.getRoot());
+                System.out.println("variables: " + component.getVariables());
+                System.out.println("filters: " + component.getFilters());
+                int numVariables = component.getVariables().size();
+                int iter = 0;
+                for (List<String> node : component.getVariables()){
+                    myWriter.write(node.get(1));
+                    if (iter != numVariables - 1)
+                        myWriter.write(",");
+                    myWriter.write("\n");
+                    iter += 1;
+                }
+                // return <tuple>{<d1>{$d1}</d1>,<id1>{$id1}</id1>,<a1>{$a1}</a1>}</tuple>,
+                myWriter.write("<return> <tuple>{ ");
+                iter = 0;
+                for (List<String> node : component.getVariables()){
+                    myWriter.write("<" + node.get(0) + ">{$" + node.get(0) + "}</" + node.get(0) + ">");
+                    if (iter != numVariables - 1)
+                        myWriter.write(", ");
+                    iter += 1;
+                }
+                myWriter.write(" }</tuple> </return>\n");
+            }
+            myWriter.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
@@ -343,6 +374,16 @@ public class XQueryProcessor {
                         // Extract the variable name
                         String variable = forClause.getChild(i).getText().substring(1);
 
+
+
+                        // extract query string
+                        String queryString = forClause.getChild(i).getText();
+                        for (int j = i + 1; j < i + 3; j++) {
+                            System.out.println("j: " + j + " : " + " i " + i);
+                            System.out.println("forClause.getChildCount()" + forClause.getChildCount());
+                            queryString = queryString.concat(" " + forClause.getChild(j).getText());
+                        }
+
                         // Check if the XQuery is an absolute path
                         ParseTree xQuery = forClause.getChild(i + 2).getChild(0);
                         if (xQuery instanceof XQueryParser.AbsolutePathContext) {
@@ -352,7 +393,7 @@ public class XQueryProcessor {
 //                            put("Filters", new ArrayList<>());
 //                            put("Join Operator", new ArrayList<>());
 //                        }});
-                            connectedComponents.put(variable, new ConnectedComponent(variable));
+                            connectedComponents.put(variable, new ConnectedComponent(variable, queryString));
                             // Update the dependency hash map
                             dependency.put(variable, variable);
                         } else if (xQuery instanceof XQueryParser.XQueryContext) {
@@ -360,7 +401,7 @@ public class XQueryProcessor {
                             String dependentVariable = xQuery.getText().substring(1);
                             // Update the connected components hash map
 //                        connectedComponents.get(dependentVariable).get("Variable Group").add(variable);
-                            connectedComponents.get(dependentVariable).addVariable(variable);
+                            connectedComponents.get(dependentVariable).addVariable(variable, queryString);
                             // Update the dependency hash map
                             dependency.put(variable, dependency.get(dependentVariable));
                         }
@@ -416,9 +457,10 @@ public class XQueryProcessor {
                     }
 
                     System.out.println(connectedComponents);
+                    rewriteJoins(connectedComponents);
                 }
-
-                result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
+//FIX: tesing coment
+//                result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
 
                 break;
 

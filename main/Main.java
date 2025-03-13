@@ -50,7 +50,7 @@ public class Main {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document resultDocument = builder.newDocument();
-            XQueryProcessor processor = new XQueryProcessor(DOMTree.getDocumentElement(), resultDocument, "rewriteFilename");
+            XQueryProcessor processor = new XQueryProcessor(DOMTree.getDocumentElement(), resultDocument, rewriteFilename);
 
 
             List<Node> result = processor.parse(AST, new HashMap<String, List<Node>>());
