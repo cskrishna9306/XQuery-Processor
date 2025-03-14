@@ -1,4 +1,7 @@
 package main;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.w3c.dom.*;
 import java.io.FileWriter;
@@ -48,41 +51,73 @@ public class XQueryProcessor {
         return this.resultDocument.createTextNode(s);
     }
 
-    private void rewriteJoins(HashMap<String, ConnectedComponent> connectedComponents){
-        FileWriter myWriter = null;
+    private String rewriteJoins(HashMap<String, ConnectedComponent> connectedComponents, String returnClauseString){
+        StringBuilder result = new StringBuilder();
         try {
-            myWriter = new FileWriter(rewriteFilename);
-            System.out.println("rewrite: ");
-            myWriter.write("for ");
-            for (ConnectedComponent component : connectedComponents.values()){
-                System.out.println("Root: " + component.getRoot());
-                System.out.println("variables: " + component.getVariables());
-                System.out.println("filters: " + component.getFilters());
+            FileWriter myWriter = new FileWriter(rewriteFilename);
+//            result.append("<result> {");
+            result.append("for $tuple in join (\n");
+
+            StringBuilder attrCond1;
+            StringBuilder attrCond2;
+            int componentIter = 0;
+            ConnectedComponent previous = null;
+            for (ConnectedComponent component : connectedComponents.values()) {
                 int numVariables = component.getVariables().size();
-                int iter = 0;
-                for (List<String> node : component.getVariables()){
-                    myWriter.write(node.get(1));
-                    if (iter != numVariables - 1)
-                        myWriter.write(",");
-                    myWriter.write("\n");
-                    iter += 1;
+                int varIter = 0;
+                result.append("for ");
+                for (List<String> node : component.getVariables()) {
+                    result.append(node.get(1));
+                    if (varIter != numVariables - 1)
+                        result.append(",");
+                    result.append("\n");
+                    varIter += 1;
                 }
                 // return <tuple>{<d1>{$d1}</d1>,<id1>{$id1}</id1>,<a1>{$a1}</a1>}</tuple>,
-                myWriter.write("<return> <tuple>{ ");
-                iter = 0;
-                for (List<String> node : component.getVariables()){
-                    myWriter.write("<" + node.get(0) + ">{$" + node.get(0) + "}</" + node.get(0) + ">");
-                    if (iter != numVariables - 1)
-                        myWriter.write(", ");
-                    iter += 1;
+                result.append("return <tuple>{ ");
+                varIter = 0;
+                for (List<String> node : component.getVariables()) {
+                    result.append("<" + node.get(0) + ">{$" + node.get(0) + "}</" + node.get(0) + ">");
+                    if (varIter != numVariables - 1)
+                        result.append(", ");
+                    varIter += 1;
                 }
-                myWriter.write(" }</tuple> </return>\n");
+                result.append(" }</tuple>,");
+                result.append("\n");
+
+                // write attributes
+                if (previous != null) {
+                    attrCond1 = new StringBuilder();
+                    attrCond2 = new StringBuilder();
+                    if (componentIter > 0) {
+                        attrCond1.append("[");
+                        attrCond2.append("[");
+                    }
+                    for (AbstractMap.SimpleEntry<String, String> join : component.getJoins()) {
+                        if (componentIter != 0) {
+                            attrCond2.append(join.getKey());
+                            attrCond1.append(join.getValue());
+                        }
+                    }
+                    attrCond1.append("], ");
+                    attrCond2.append("])");
+                    attrCond2.append("\n");
+                    result.append(attrCond1.toString());
+                    result.append(attrCond2.toString());
+                }
+                previous = component;
+                componentIter += 1;
             }
+            result.append(returnClauseString);
+//            result.append("} </result>");
+            myWriter.write(result.toString());
             myWriter.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        return result.toString();
     }
+
 
 
     private List<Node> searchFor(ParseTree forClause, ParseTree letClause, ParseTree whereClause, ParseTree returnClause, HashMap<String, List<Node>> context, int i) {
@@ -166,7 +201,6 @@ public class XQueryProcessor {
 
 
     private List<Node> parseJoin(ParseTree joinClause, HashMap<String, List<Node>> context) {
-
         // List of result nodes
         List<Node> result = new ArrayList<>();
 
@@ -225,7 +259,6 @@ public class XQueryProcessor {
                     NodeList children = tuple.getChildNodes();
                     for (int i = 0; i < children.getLength(); i++)
                         copiedTuple.appendChild(children.item(i).cloneNode(true));
-
                     result.add(copiedTuple);
                 }
             }
@@ -360,7 +393,6 @@ public class XQueryProcessor {
                 ParseTree letClause = AST.getChild(1);
                 ParseTree whereClause = AST.getChild(2);
                 ParseTree returnClause = AST.getChild(3);
-                System.out.println("where clause: " + whereClause.getText());
                 if (whereClause.getChildCount() != 0) {
                     // Step 1: Rewrite the for clause with the join operator
                     // This hash map represents the root parent of the variable
@@ -379,8 +411,6 @@ public class XQueryProcessor {
                         // extract query string
                         String queryString = forClause.getChild(i).getText();
                         for (int j = i + 1; j < i + 3; j++) {
-                            System.out.println("j: " + j + " : " + " i " + i);
-                            System.out.println("forClause.getChildCount()" + forClause.getChildCount());
                             queryString = queryString.concat(" " + forClause.getChild(j).getText());
                         }
 
@@ -456,11 +486,21 @@ public class XQueryProcessor {
                         queue.add(child2);
                     }
 
-                    System.out.println(connectedComponents);
-                    rewriteJoins(connectedComponents);
+
+                    String rewriteReturnClause = returnClause.getText()
+                            .replace("return", "return ")
+                            .replaceAll("\\$([A-Za-z0-9_]+)", "\\$tuple/$1/*")
+                            .replaceAll(",", ",\n");
+
+                    CharStream rewriteQuery = CharStreams.fromString(rewriteJoins(connectedComponents, rewriteReturnClause));
+                    XQueryLexer lexer = new XQueryLexer(rewriteQuery);
+                    XQueryParser parser = new XQueryParser(new CommonTokenStream(lexer));
+                    ParseTree rewriteAST = parser.eval();
+                    result.addAll(parse(rewriteAST, new HashMap<String, List<Node>>()));
+
+                }else {
+                    result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
                 }
-//FIX: tesing coment
-//                result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
 
                 break;
 
