@@ -5,7 +5,7 @@ public class ConnectedComponent {
 
     private final String root;
     private final Set<List<String>> variables;
-    private final Set<String> filters;
+    private final List<List<String>> filters;
     private final Set<AbstractMap.SimpleEntry<String, String>> joins;
 
     public ConnectedComponent(String root, String queryString) {
@@ -16,7 +16,7 @@ public class ConnectedComponent {
             node.add(queryString);
             add(node);
         }};
-        this.filters = new LinkedHashSet<>();
+        this.filters = new LinkedList<>();
         this.joins = new LinkedHashSet<>();
     }
 
@@ -27,8 +27,8 @@ public class ConnectedComponent {
         this.variables.add(node);
     }
 
-    public void addFilter(String filter) {
-        this.filters.add(filter);
+    public void addFilter(String var, String filter) {
+        this.filters.add(new LinkedList<>(Arrays.asList(var, filter)));
     }
 
     public void addJoin(AbstractMap.SimpleEntry<String, String> join) {
@@ -43,7 +43,7 @@ public class ConnectedComponent {
         return this.variables;
     }
 
-    public Set<String> getFilters() {
+    public List<List<String>> getFilters() {
         return this.filters;
     }
 
@@ -53,6 +53,7 @@ public class ConnectedComponent {
 
     @Override
     public String toString() {
+
         return "ConnectedComponent{" +
                 "root='" + this.root + '\'' +
                 ", variables=" + this.variables +

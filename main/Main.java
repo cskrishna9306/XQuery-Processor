@@ -54,6 +54,7 @@ public class Main {
 
 
             List<Node> result = processor.parse(AST, new HashMap<String, List<Node>>());
+//            System.out.println("First node: " + result.get(0).getNodeName());
 //            System.out.println("resultsize : " + result.size());
 
             if (result.size() > 1) {

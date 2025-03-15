@@ -56,6 +56,7 @@ public class XQueryProcessor {
         try {
             FileWriter myWriter = new FileWriter(rewriteFilename);
 //            result.append("<result> {");
+
             result.append("for $tuple in join (\n");
 
             StringBuilder attrCond1;
@@ -63,6 +64,11 @@ public class XQueryProcessor {
             int componentIter = 0;
             ConnectedComponent previous = null;
             for (ConnectedComponent component : connectedComponents.values()) {
+                System.out.println("Connected Component: " + component.getRoot());
+                System.out.println("Variables: " + component.getVariables());
+                System.out.println("Filters: " + component.getFilters());
+                System.out.println("Joins: " + component.getJoins());
+                System.out.println("Result: \n" +  result.toString());
                 int numVariables = component.getVariables().size();
                 int varIter = 0;
                 result.append("for ");
@@ -73,6 +79,24 @@ public class XQueryProcessor {
                     result.append("\n");
                     varIter += 1;
                 }
+
+                // Build the where clause if filter for this connected component exists
+                if (!component.getFilters().isEmpty()) {
+                    List<List<String>> ccFilters = component.getFilters();
+                    result.append("where ");
+                    for (int i = 0; i < ccFilters.size(); i++) {
+                        result.append("$")
+                                .append(ccFilters.get(i).get(0))
+                                .append(" eq ")
+                                .append("\"")
+                        .append(ccFilters.get(i).get(1))
+                        .append("\"");
+                        if (i != ccFilters.size() - 1)
+                            result.append(" and ");
+                        result.append("\n");
+                    }
+                }
+
                 // return <tuple>{<d1>{$d1}</d1>,<id1>{$id1}</id1>,<a1>{$a1}</a1>}</tuple>,
                 result.append("return <tuple>{ ");
                 varIter = 0;
@@ -112,6 +136,7 @@ public class XQueryProcessor {
 //            result.append("} </result>");
             myWriter.write(result.toString());
             myWriter.close();
+            System.out.println("END 0----- Result: \n" +  result.toString());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -393,7 +418,7 @@ public class XQueryProcessor {
                 ParseTree letClause = AST.getChild(1);
                 ParseTree whereClause = AST.getChild(2);
                 ParseTree returnClause = AST.getChild(3);
-                if (whereClause.getChildCount() != 0) {
+//                if (whereClause.getChildCount() != 0) {
                     // Step 1: Rewrite the for clause with the join operator
                     // This hash map represents the root parent of the variable
                     HashMap<String, String> dependency = new HashMap<>();
@@ -443,7 +468,9 @@ public class XQueryProcessor {
                     // Maintain a queue of the conditions
                     Queue<ParseTree> queue = new LinkedList<>();
                     // we observe the conditions from the parent
-                    queue.add(whereClause.getChild(1));
+                    if (whereClause.getChild(1) != null){
+                        queue.add(whereClause.getChild(1));
+                    }
 
                     while (!queue.isEmpty()) {
                         ParseTree parent = queue.remove();
@@ -477,7 +504,7 @@ public class XQueryProcessor {
 //                                    .add(variable);
                                 connectedComponents
                                         .get(dependency.get(variable))
-                                        .addFilter(variable);
+                                        .addFilter(variable, operator.getText().substring(1, operator.getText().length() - 1));
                             continue;
                         }
 
@@ -486,21 +513,26 @@ public class XQueryProcessor {
                         queue.add(child2);
                     }
 
+                    if (connectedComponents.size() > 1) {
 
-                    String rewriteReturnClause = returnClause.getText()
-                            .replace("return", "return ")
-                            .replaceAll("\\$([A-Za-z0-9_]+)", "\\$tuple/$1/*")
-                            .replaceAll(",", ",\n");
+                        String rewriteReturnClause = returnClause.getText()
+                                .replace("return", "return ")
+                                .replaceAll("\\$([A-Za-z0-9_]+)", "\\$tuple/$1/*")
+                                .replaceAll(",", ",\n");
 
-                    CharStream rewriteQuery = CharStreams.fromString(rewriteJoins(connectedComponents, rewriteReturnClause));
-                    XQueryLexer lexer = new XQueryLexer(rewriteQuery);
-                    XQueryParser parser = new XQueryParser(new CommonTokenStream(lexer));
-                    ParseTree rewriteAST = parser.eval();
-                    result.addAll(parse(rewriteAST, new HashMap<String, List<Node>>()));
+                        CharStream rewriteQuery = CharStreams.fromString(rewriteJoins(connectedComponents, rewriteReturnClause));
+                        XQueryLexer lexer = new XQueryLexer(rewriteQuery);
+                        XQueryParser parser = new XQueryParser(new CommonTokenStream(lexer));
+                        ParseTree rewriteAST = parser.eval();
+                        result.addAll(parse(rewriteAST, new HashMap<String, List<Node>>()));
 
-                }else {
-                    result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
-                }
+                    }else {
+                        System.out.println("For clause: " + forClause.getText());
+                        System.out.println("Let clause: " + letClause.getText());
+                        System.out.println("where clause: " + whereClause.getText());
+                        System.out.println("return clause: " + returnClause.getText());
+                        result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
+                    }
 
                 break;
 
