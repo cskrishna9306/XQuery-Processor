@@ -55,22 +55,28 @@ public class XQueryProcessor {
         StringBuilder result = new StringBuilder();
         try {
             FileWriter myWriter = new FileWriter(rewriteFilename);
-//            result.append("<result> {");
-
-            result.append("for $tuple in join (\n");
-
             StringBuilder attrCond1;
             StringBuilder attrCond2;
             int componentIter = 0;
-            ConnectedComponent previous = null;
-            for (ConnectedComponent component : connectedComponents.values()) {
-                System.out.println("Connected Component: " + component.getRoot());
-                System.out.println("Variables: " + component.getVariables());
-                System.out.println("Filters: " + component.getFilters());
-                System.out.println("Joins: " + component.getJoins());
-                System.out.println("Result: \n" +  result.toString());
+            List<ConnectedComponent> components = new ArrayList<>(connectedComponents.values());
+
+            // Store next components to join based on avaliable joins
+            Queue<ConnectedComponent> queue = new LinkedList<>();
+            queue.add(components.get(0));
+            HashSet<List<String>> visitedJoins = new HashSet<>();
+            // store joins from components that have been joined with other components
+            // but still require another non visited component
+            HashSet<List<String>> skippedJoins = new HashSet<>();
+            // components that have been joined
+            HashSet<String> visitedComponents = new HashSet<>();
+            visitedComponents.add(components.get(0).getRoot());
+
+            // Loop through all connected components
+            while (!queue.isEmpty()){
+                ConnectedComponent component = queue.remove();
                 int numVariables = component.getVariables().size();
-                int varIter = 0;
+                // Build the for clause
+                int varIter = 0; // track iterations of variables in the component for adding commas
                 result.append("for ");
                 for (List<String> node : component.getVariables()) {
                     result.append(node.get(1));
@@ -89,15 +95,15 @@ public class XQueryProcessor {
                                 .append(ccFilters.get(i).get(0))
                                 .append(" eq ")
                                 .append("\"")
-                        .append(ccFilters.get(i).get(1))
-                        .append("\"");
+                                .append(ccFilters.get(i).get(1))
+                                .append("\"");
                         if (i != ccFilters.size() - 1)
                             result.append(" and ");
                         result.append("\n");
                     }
                 }
 
-                // return <tuple>{<d1>{$d1}</d1>,<id1>{$id1}</id1>,<a1>{$a1}</a1>}</tuple>,
+                // Build the return clause
                 result.append("return <tuple>{ ");
                 varIter = 0;
                 for (List<String> node : component.getVariables()) {
@@ -109,34 +115,82 @@ public class XQueryProcessor {
                 result.append(" }</tuple>,");
                 result.append("\n");
 
-                // write attributes
-                if (previous != null) {
+
+
+                if (componentIter == 0) {
+                    // Add the joins of the first component, done once
+                    for (AbstractMap.SimpleEntry<String, String> join : component.getJoins()) {
+                        String var2 = join.getKey();
+                        String var1 = join.getValue();
+                        skippedJoins.add(Arrays.asList(var1, var2));
+                        skippedJoins.add(Arrays.asList(var2, var1));
+                    }
+                } else {
+                    // Build the join condition, done for all components except the first
                     attrCond1 = new StringBuilder();
                     attrCond2 = new StringBuilder();
-                    if (componentIter > 0) {
-                        attrCond1.append("[");
-                        attrCond2.append("[");
-                    }
+                    attrCond1.append("[");
+                    attrCond2.append("[");
+
                     for (AbstractMap.SimpleEntry<String, String> join : component.getJoins()) {
-                        if (componentIter != 0) {
+                        String var2 = join.getKey();
+                        String var1 = join.getValue();
+                        if (visitedJoins.contains(Arrays.asList(var1, var2)) || visitedJoins.contains(Arrays.asList(var2, var1)))
+                            continue;
+                        if (skippedJoins.contains(Arrays.asList(var1, var2)) || skippedJoins.contains(Arrays.asList(var2, var1))) {
                             attrCond2.append(join.getKey());
                             attrCond1.append(join.getValue());
+                            visitedJoins.add(Arrays.asList(var1, var2));
+                            visitedJoins.add(Arrays.asList(var2, var1));
+                            skippedJoins.remove(Arrays.asList(var1, var2));
+                            skippedJoins.remove(Arrays.asList(var2, var1));
+                        } else {
+                            skippedJoins.add(Arrays.asList(var1, var2));
+                            skippedJoins.add(Arrays.asList(var2, var1));
                         }
                     }
                     attrCond1.append("], ");
                     attrCond2.append("])");
-                    attrCond2.append("\n");
                     result.append(attrCond1.toString());
                     result.append(attrCond2.toString());
+                    if (!skippedJoins.isEmpty()){
+                        result.append(",");
+                    }
+                    result.append("\n");
                 }
-                previous = component;
+
+                // Find if next component exist to join
+                if (!skippedJoins.isEmpty()) {
+                    List<String> newJoin = skippedJoins.iterator().next();
+                    AbstractMap.SimpleEntry<String, String> joinTarget1 = new AbstractMap.SimpleEntry<>(newJoin.get(0), newJoin.get(1));
+                    AbstractMap.SimpleEntry<String, String> joinTarget2 = new AbstractMap.SimpleEntry<>(newJoin.get(1), newJoin.get(0));
+                    for (ConnectedComponent nextComponent : connectedComponents.values()) {
+                        if (visitedComponents.contains(nextComponent.getRoot()))
+                            continue;
+                        if (nextComponent.getJoins().contains(joinTarget1) || nextComponent.getJoins().contains(joinTarget2)) {
+                            queue.add(nextComponent);
+                            visitedComponents.add(nextComponent.getRoot());
+                            break;
+                        }
+                    }
+                }
                 componentIter += 1;
             }
+
+            // Add the return clause
             result.append(returnClauseString);
-//            result.append("} </result>");
+
+            // Add the join keyword
+            for(int i = 0; i < componentIter - 2; i++) {
+                if (componentIter > 1) {
+                    result.insert(0, "join (\n");
+                }
+            }
+
+            // add the top level join keyword
+            result.insert(0, "for $tuple in join (\n");
             myWriter.write(result.toString());
             myWriter.close();
-            System.out.println("END 0----- Result: \n" +  result.toString());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -527,10 +581,10 @@ public class XQueryProcessor {
                         result.addAll(parse(rewriteAST, new HashMap<String, List<Node>>()));
 
                     }else {
-                        System.out.println("For clause: " + forClause.getText());
-                        System.out.println("Let clause: " + letClause.getText());
-                        System.out.println("where clause: " + whereClause.getText());
-                        System.out.println("return clause: " + returnClause.getText());
+//                        System.out.println("For clause: " + forClause.getText());
+//                        System.out.println("Let clause: " + letClause.getText());
+//                        System.out.println("where clause: " + whereClause.getText());
+//                        System.out.println("return clause: " + returnClause.getText());
                         result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
                     }
 
