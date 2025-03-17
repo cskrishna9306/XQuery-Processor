@@ -81,7 +81,7 @@ public class XQueryProcessor {
                 for (List<String> node : component.getVariables()) {
                     result.append(node.get(1));
                     if (varIter != numVariables - 1)
-                        result.append(",");
+                        result.append(", ");
                     result.append("\n");
                     varIter += 1;
                 }
@@ -112,7 +112,7 @@ public class XQueryProcessor {
                         result.append(", ");
                     varIter += 1;
                 }
-                result.append(" }</tuple>,");
+                result.append(" }</tuple>, ");
                 result.append("\n");
 
 
@@ -154,7 +154,7 @@ public class XQueryProcessor {
                     result.append(attrCond1.toString());
                     result.append(attrCond2.toString());
                     if (!skippedJoins.isEmpty()){
-                        result.append(",");
+                        result.append(", ");
                     }
                     result.append("\n");
                 }
@@ -183,12 +183,12 @@ public class XQueryProcessor {
             // Add the join keyword
             for(int i = 0; i < componentIter - 2; i++) {
                 if (componentIter > 1) {
-                    result.insert(0, "join (\n");
+                    result.insert(0, "join ( \n");
                 }
             }
 
             // add the top level join keyword
-            result.insert(0, "for $tuple in join (\n");
+            result.insert(0, "for $tuple in join ( \n");
             myWriter.write(result.toString());
             myWriter.close();
         } catch (IOException e) {
