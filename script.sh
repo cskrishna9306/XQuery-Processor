@@ -21,14 +21,14 @@ java -cp lib/antlr-4.13.1-complete.jar org.antlr.v4.Tool -package main.antlr -o 
 javac -cp "lib/*" -d classes main/*.java main/antlr/*.java
 java_files=$(find main -name "*.java")
 javac -cp lib/* -d classes $java_files
-#java -cp "classes:lib/*" main.Main ./main/data/j_caesar.xml ./milestone3/query1.txt ./main/data/result/queryRewrite1.txt query1.xml
+java -cp "classes:lib/*" main.Main ./main/data/j_caesar.xml ./milestone3/query1.txt ./main/data/result/queryRewrite1.txt query1.xml
 #java -cp "classes:lib/*" main.Main ./main/data/j_caesar.xml ./milestone3/query1_re.txt ./main/data/result/queryRewrite1_re.txt query1_re.xml
 #java -cp "classes:lib/*" main.Main ./main/data/large-data.xml ./milestone3/query2.txt ./main/data/result/queryRewrite2.txt query2.xml
 #java -cp "classes:lib/*" main.Main ./main/data/large-data.xml ./milestone3/query2_j.txt ./main/data/result/queryRewrite2_j.txt query2_j.xml
 #java -cp "classes:lib/*" main.Main ./main/data/large-data.xml ./milestone3/query2_re.txt ./main/data/result/queryRewrite2re.txt query2_re.xml
 #java -cp "classes:lib/*" main.Main ./main/data/large-data.xml ./milestone3/rewrite3.txt ./main/data/result/rewrite3.txt rewrite3.xml
 #java -cp "classes:lib/*" main.Main ./main/data/large-data.xml ./milestone3/query3.txt ./main/data/result/queryRewrite3.txt query3.xml
-java -cp "classes:lib/*" main.Main ./main/data/large-data.xml ./milestone3/query4.txt ./main/data/result/queryRewrite4.txt query4.xml
+#java -cp "classes:lib/*" main.Main ./main/data/large-data.xml ./milestone3/query4.txt ./main/data/result/queryRewrite4.txt query4.xml
 
 #javac -cp lib/* ./main/Main.java
 #java -cp lib/* main.Main ./main/j\_caesar.xml ./test.xml result.xml

@@ -51,7 +51,7 @@ public class XQueryProcessor {
         return this.resultDocument.createTextNode(s);
     }
 
-    private String rewriteJoins(HashMap<String, ConnectedComponent> connectedComponents, String returnClauseString){
+    private String rewriteJoins(LinkedHashMap<String, ConnectedComponent> connectedComponents, String returnClauseString){
         StringBuilder result = new StringBuilder();
         try {
             FileWriter myWriter = new FileWriter(rewriteFilename);
@@ -472,124 +472,108 @@ public class XQueryProcessor {
                 ParseTree letClause = AST.getChild(1);
                 ParseTree whereClause = AST.getChild(2);
                 ParseTree returnClause = AST.getChild(3);
-//                if (whereClause.getChildCount() != 0) {
-                    // Step 1: Rewrite the for clause with the join operator
-                    // This hash map represents the root parent of the variable
-                    HashMap<String, String> dependency = new HashMap<>();
-                    // This hash map represents the disjoint set of connected components rooted at the key
-//                HashMap<String, HashMap<String, List<String>>> connectedComponents = new HashMap<>();
-                    HashMap<String, ConnectedComponent> connectedComponents = new HashMap<>();
+                // Step 1: Rewrite the for clause with the join operator
+                // This hash map represents the root parent of the variable
+                HashMap<String, String> dependency = new HashMap<>();
+                // This hash map represents the disjoint set of connected components rooted at the key
+                LinkedHashMap<String, ConnectedComponent> connectedComponents = new LinkedHashMap<>();
 
-                    // Step 1a: Build the dependency graph of all the dependant "for clause" variables
-                    for (int i = 1; i < forClause.getChildCount() - 2; i += 4) {
-                        // Extract the variable name
-                        String variable = forClause.getChild(i).getText().substring(1);
+                // Step 1a: Build the dependency graph of all the dependant "for clause" variables
+                for (int i = 1; i < forClause.getChildCount() - 2; i += 4) {
+                    // Extract the variable name
+                    String variable = forClause.getChild(i).getText().substring(1);
 
-
-
-                        // extract query string
-                        String queryString = forClause.getChild(i).getText();
-                        for (int j = i + 1; j < i + 3; j++) {
-                            queryString = queryString.concat(" " + forClause.getChild(j).getText());
-                        }
-
-                        // Check if the XQuery is an absolute path
-                        ParseTree xQuery = forClause.getChild(i + 2).getChild(0);
-                        if (xQuery instanceof XQueryParser.AbsolutePathContext) {
-                            // Update the connected components hash map
-//                        connectedComponents.put(variable, new HashMap<String, List<String>>() {{
-//                            put("Variable Group", new ArrayList<>());
-//                            put("Filters", new ArrayList<>());
-//                            put("Join Operator", new ArrayList<>());
-//                        }});
-                            connectedComponents.put(variable, new ConnectedComponent(variable, queryString));
-                            // Update the dependency hash map
-                            dependency.put(variable, variable);
-                        } else if (xQuery instanceof XQueryParser.XQueryContext) {
-                            // Add the dependency to its respective connected component
-                            String dependentVariable = xQuery.getText().substring(1);
-                            // Update the connected components hash map
-//                        connectedComponents.get(dependentVariable).get("Variable Group").add(variable);
-                            connectedComponents.get(dependentVariable).addVariable(variable, queryString);
-                            // Update the dependency hash map
-                            dependency.put(variable, dependency.get(dependentVariable));
-                        }
+                    // extract query string
+                    String queryString = forClause.getChild(i).getText();
+                    for (int j = i + 1; j < i + 3; j++) {
+                        queryString = queryString.concat(" " + forClause.getChild(j).getText());
                     }
 
-                    // Step 1b: Now, evaluate the where clause to determine the joins across the connected components
-                    // Since we have the connected components, determine the attributes participating in the join
-
-                    // Maintain a queue of the conditions
-                    Queue<ParseTree> queue = new LinkedList<>();
-                    // we observe the conditions from the parent
-                    if (whereClause.getChild(1) != null){
-                        queue.add(whereClause.getChild(1));
+                    // Check if the XQuery is an absolute path
+                    ParseTree xQuery = forClause.getChild(i + 2).getChild(0);
+                    if (xQuery instanceof XQueryParser.AbsolutePathContext) {
+                        // Update the connected components hash map
+                        connectedComponents.put(variable, new ConnectedComponent(variable, queryString));
+                        // Update the dependency hash map
+                        dependency.put(variable, variable);
+                    } else if (xQuery instanceof XQueryParser.XQueryContext) {
+                        // Add the dependency to its respective connected component
+                        String dependentVariable = xQuery.getText().substring(1);
+                        // Update the connected components hash map
+                        connectedComponents.get(dependentVariable).addVariable(variable, queryString);
+                        // Update the dependency hash map
+                        dependency.put(variable, dependency.get(dependentVariable));
                     }
+                }
 
-                    while (!queue.isEmpty()) {
-                        ParseTree parent = queue.remove();
-                        ParseTree child1 = parent.getChild(0);
-                        ParseTree child2 = parent.getChild(2);
+                // Step 1b: Now, evaluate the where clause to determine the joins across the connected components
+                // Since we have the connected components, determine the attributes participating in the join
 
-                        // Base case: Both are XQuery (if child 1 is XQuery then child 2 is also XQuery)
-                        if (child1 instanceof XQueryParser.XQueryContext) {
-                            String variable = child1.getChild(0).getText().substring(1);
-                            TerminalNode operator = (TerminalNode) child2.getChild(0);
+                // Maintain a queue of the conditions
+                Queue<ParseTree> queue = new LinkedList<>();
+                // we observe the conditions from the parent
+                if (whereClause.getChild(1) != null){
+                    queue.add(whereClause.getChild(1));
+                }
 
-                            if (operator.getSymbol().getType() == XQueryLexer.VAR) {
+                while (!queue.isEmpty()) {
+                    ParseTree parent = queue.remove();
+                    ParseTree child1 = parent.getChild(0);
+                    ParseTree child2 = parent.getChild(2);
+
+                    // Base case: Both are XQuery (if child 1 is XQuery then child 2 is also XQuery)
+                    if (child1 instanceof XQueryParser.XQueryContext) {
+                        String variable = child1.getChild(0).getText().substring(1);
+                        TerminalNode operator = (TerminalNode) child2.getChild(0);
+
+                        if (operator.getSymbol().getType() == XQueryLexer.VAR) {
 //                            connectedComponents
 //                                    .get(dependency.get(variable))
 //                                    .get("Join Operator")
 //                                    .add(variable);
-                                connectedComponents
-                                        .get(dependency.get(variable))
-                                        .addJoin(new AbstractMap.SimpleEntry<>(variable, operator.getText().substring(1)));
+                            connectedComponents
+                                    .get(dependency.get(variable))
+                                    .addJoin(new AbstractMap.SimpleEntry<>(variable, operator.getText().substring(1)));
 //                            connectedComponents
 //                                    .get(dependency.get(operator.getText().substring(1)))
 //                                    .get("Join Operator")
 //                                    .add(operator.getText().substring(1));
-                                connectedComponents
-                                        .get(dependency.get(operator.getText().substring(1)))
-                                        .addJoin(new AbstractMap.SimpleEntry<>(operator.getText().substring(1), variable));
-                            } else if (operator.getSymbol().getType() == XQueryLexer.STRING)
+                            connectedComponents
+                                    .get(dependency.get(operator.getText().substring(1)))
+                                    .addJoin(new AbstractMap.SimpleEntry<>(operator.getText().substring(1), variable));
+                        } else if (operator.getSymbol().getType() == XQueryLexer.STRING)
 //                            connectedComponents
 //                                    .get(dependency.get(variable))
 //                                    .get("Filters")
 //                                    .add(variable);
-                                connectedComponents
-                                        .get(dependency.get(variable))
-                                        .addFilter(variable, operator.getText().substring(1, operator.getText().length() - 1));
-                            continue;
-                        }
-
-                        // Recursive Case: Both are conditions (if child 1 is condition then child 2 also has to be condition)
-                        queue.add(child1);
-                        queue.add(child2);
+                            connectedComponents
+                                    .get(dependency.get(variable))
+                                    .addFilter(variable, operator.getText().substring(1, operator.getText().length() - 1));
+                        continue;
                     }
 
-                    if (connectedComponents.size() > 1) {
+                    // Recursive Case: Both are conditions (if child 1 is condition then child 2 also has to be condition)
+                    queue.add(child1);
+                    queue.add(child2);
+                }
 
-                        String rewriteReturnClause = returnClause.getText()
-                                .replace("return", "return ")
-                                .replaceAll("\\$([A-Za-z0-9_]+)", "\\$tuple/$1/*")
-                                .replaceAll(",", ",\n");
+                if (connectedComponents.size() > 1) {
 
-                        CharStream rewriteQuery = CharStreams.fromString(rewriteJoins(connectedComponents, rewriteReturnClause));
-                        XQueryLexer lexer = new XQueryLexer(rewriteQuery);
-                        XQueryParser parser = new XQueryParser(new CommonTokenStream(lexer));
-                        ParseTree rewriteAST = parser.eval();
-                        result.addAll(parse(rewriteAST, new HashMap<String, List<Node>>()));
+                    String rewriteReturnClause = returnClause.getText()
+                            .replace("return", "return ")
+                            .replaceAll("\\$([A-Za-z0-9_]+)", "\\$tuple/$1/*")
+                            .replaceAll(",", ",\n");
 
-                    }else {
-//                        System.out.println("For clause: " + forClause.getText());
-//                        System.out.println("Let clause: " + letClause.getText());
-//                        System.out.println("where clause: " + whereClause.getText());
-//                        System.out.println("return clause: " + returnClause.getText());
-                        result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
-                    }
+                    CharStream rewriteQuery = CharStreams.fromString(rewriteJoins(connectedComponents, rewriteReturnClause));
+                    XQueryLexer lexer = new XQueryLexer(rewriteQuery);
+                    XQueryParser parser = new XQueryParser(new CommonTokenStream(lexer));
+                    ParseTree rewriteAST = parser.eval();
+                    result.addAll(parse(rewriteAST, new HashMap<String, List<Node>>()));
 
+                }else {
+                    result.addAll(searchFor(forClause, letClause, whereClause, returnClause, context, 1));
+                }
                 break;
-
             }
             case 9: {
                 result.add(makeElement(AST.getChild(1).getText(), parse(AST.getChild(4), context)));

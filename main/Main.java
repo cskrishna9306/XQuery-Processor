@@ -50,7 +50,16 @@ public class Main {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document resultDocument = builder.newDocument();
-            XQueryProcessor processor = new XQueryProcessor(DOMTree.getDocumentElement(), resultDocument, rewriteFilename);
+            Document doc = DOMTree;
+            Element dom2 = DOMTree.getDocumentElement();
+            Element newParent = doc.createElement("newParent");
+
+            // Add the child to the new parent
+            newParent.appendChild(dom2);
+
+            // Append the new parent to the document
+            doc.appendChild(newParent);
+            XQueryProcessor processor = new XQueryProcessor(newParent, resultDocument, rewriteFilename);
 
 
             List<Node> result = processor.parse(AST, new HashMap<String, List<Node>>());
